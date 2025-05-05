@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Box, Calendar, Clock, Home, Package, Settings, ShoppingCart, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,8 +16,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const Sidebar: React.FC = () => {
+  const location = useLocation();
+  
   const menuItems = [
-    { icon: Home, label: "Dashboard", href: "/", active: true },
+    { icon: Home, label: "Dashboard", href: "/", },
     { icon: ShoppingCart, label: "Pedidos", href: "/orders", badge: "12" },
     { icon: Box, label: "Produtos", href: "/products" },
     { icon: Calendar, label: "Agendamentos", href: "/schedule" },
@@ -46,7 +48,7 @@ const Sidebar: React.FC = () => {
                       to={item.href}
                       className={cn(
                         "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm",
-                        item.active && "bg-accent"
+                        location.pathname === item.href && "bg-accent"
                       )}
                     >
                       <div className="flex items-center gap-3">

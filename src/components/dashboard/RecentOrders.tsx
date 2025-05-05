@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -99,12 +100,12 @@ const RecentOrders: React.FC = () => {
     <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
       <div className="flex items-center justify-between border-b px-6 py-4">
         <h2 className="font-semibold">Pedidos Recentes</h2>
-        <a
-          href="/orders"
+        <Link
+          to="/orders"
           className="text-sm text-primary hover:underline"
         >
           Ver todos
-        </a>
+        </Link>
       </div>
       <div className="overflow-x-auto">
         <Table>
