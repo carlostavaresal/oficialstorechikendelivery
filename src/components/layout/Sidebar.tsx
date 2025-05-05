@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Box, Calendar, Clock, Home, Package, Settings, ShoppingCart, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,22 @@ import { Badge } from "@/components/ui/badge";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("Entrega Rápida");
+  
+  useEffect(() => {
+    // Load company info from localStorage
+    const savedLogo = localStorage.getItem("companyLogo");
+    const savedName = localStorage.getItem("companyName");
+    
+    if (savedLogo) {
+      setCompanyLogo(savedLogo);
+    }
+    
+    if (savedName) {
+      setCompanyName(savedName);
+    }
+  }, []);
   
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/", },
@@ -32,8 +48,16 @@ const Sidebar: React.FC = () => {
     <SidebarComponent>
       <div className="flex h-14 items-center border-b px-4">
         <Link to="/" className="flex items-center gap-2">
-          <Package className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold">Entrega Rápida</span>
+          {companyLogo ? (
+            <img 
+              src={companyLogo} 
+              alt="Logo"
+              className="h-8 w-8 rounded object-contain" 
+            />
+          ) : (
+            <Package className="h-6 w-6 text-primary" />
+          )}
+          <span className="text-xl font-bold">{companyName}</span>
         </Link>
       </div>
       <SidebarContent>

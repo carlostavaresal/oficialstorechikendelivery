@@ -1,6 +1,6 @@
 
-import React from "react";
-import { Bell, Search, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Bell, FileImage, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,9 +12,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 const Header: React.FC = () => {
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Load company logo from localStorage
+    const savedLogo = localStorage.getItem("companyLogo");
+    if (savedLogo) {
+      setCompanyLogo(savedLogo);
+    }
+    
+    // Listen for storage events to update the logo if it changes
+    const handleStorageChange = () => {
+      const updatedLogo = localStorage.getItem("companyLogo");
+      setCompanyLogo(updatedLogo);
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+  
   return (
     <header className="border-b bg-white p-4">
       <div className="flex items-center justify-between">
@@ -40,6 +63,9 @@ const Header: React.FC = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full" size="icon">
                 <Avatar className="h-8 w-8">
+                  {companyLogo ? (
+                    <AvatarImage src={companyLogo} alt="Logo" />
+                  ) : null}
                   <AvatarFallback className="bg-primary text-white">ER</AvatarFallback>
                 </Avatar>
               </Button>
@@ -51,7 +77,12 @@ const Header: React.FC = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings">
+                  <FileImage className="mr-2 h-4 w-4" />
+                  Configurações
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Sair</DropdownMenuItem>
             </DropdownMenuContent>
