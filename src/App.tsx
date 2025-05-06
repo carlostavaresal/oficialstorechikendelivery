@@ -9,6 +9,7 @@ import Orders from "./pages/orders/Orders";
 import Products from "./pages/products/Products";
 import Settings from "./pages/settings/Settings";
 import DeliveryAreas from "./pages/delivery/DeliveryAreas";
+import PaymentMethods from "./pages/payment/PaymentMethods";
 import NotFound from "./pages/NotFound";
 
 // Create a client
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/products" element={<Products />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/delivery" element={<DeliveryAreas />} />
+          <Route path="/payment" element={<PaymentMethods />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

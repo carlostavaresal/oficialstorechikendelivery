@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Phone, MessageSquare } from "lucide-react";
-import PaymentMethodSelector, { PaymentMethod } from "../payment/PaymentMethodSelector";
+import { PaymentMethod } from "../payment/PaymentMethodSelector";
+import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
 
 interface OrderItem {
   name: string;
@@ -178,19 +179,12 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
           
           <Separator />
           
-          <PaymentMethodSelector 
-            value={paymentMethod} 
-            onChange={setPaymentMethod}
+          {/* Utiliza o novo componente com visual destacado */}
+          <PaymentMethodDisplay 
+            selectedMethod={paymentMethod}
+            onMethodChange={setPaymentMethod}
+            onSave={handleSavePaymentMethod}
           />
-          <div className="flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSavePaymentMethod}
-            >
-              Salvar Forma de Pagamento
-            </Button>
-          </div>
 
           {order.address && (
             <>
