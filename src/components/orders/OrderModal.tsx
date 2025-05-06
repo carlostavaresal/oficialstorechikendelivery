@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Phone, MessageSquare } from "lucide-react";
+import PaymentMethodSelector, { PaymentMethod } from "../payment/PaymentMethodSelector";
 
 interface OrderItem {
   name: string;
@@ -31,6 +33,7 @@ interface Order {
   phone?: string;
   orderItems?: OrderItem[];
   address?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 interface OrderModalProps {
@@ -72,6 +75,9 @@ const getStatusLabel = (status: Order["status"]) => {
 const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    order?.paymentMethod || "cash"
+  );
 
   if (!order) return null;
 
@@ -108,6 +114,24 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
       title: "WhatsApp aberto",
       description: "Mensagem preparada para envio",
     });
+  };
+
+  const handleSavePaymentMethod = () => {
+    // In a real app, this would update the order in the database
+    toast({
+      title: "Forma de pagamento salva",
+      description: `Forma de pagamento definida como ${getPaymentMethodLabel(paymentMethod)}`,
+    });
+  };
+
+  const getPaymentMethodLabel = (method: PaymentMethod): string => {
+    switch (method) {
+      case "cash": return "Dinheiro";
+      case "pix": return "Pix";
+      case "credit": return "Cartão de Crédito";
+      case "debit": return "Cartão de Débito";
+      default: return "Desconhecido";
+    }
   };
 
   const orderItems = order.orderItems || [
@@ -152,6 +176,22 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
             <span>{order.total}</span>
           </div>
           
+          <Separator />
+          
+          <PaymentMethodSelector 
+            value={paymentMethod} 
+            onChange={setPaymentMethod}
+          />
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSavePaymentMethod}
+            >
+              Salvar Forma de Pagamento
+            </Button>
+          </div>
+
           {order.address && (
             <>
               <Separator />

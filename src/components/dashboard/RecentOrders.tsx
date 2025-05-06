@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
+import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 
 interface OrderItem {
   name: string;
@@ -28,6 +30,7 @@ interface Order {
   phone?: string;
   orderItems?: OrderItem[];
   address?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 const mockOrders: Order[] = [
@@ -44,7 +47,8 @@ const mockOrders: Order[] = [
       { name: "X-Burger", quantity: 1, price: "R$ 24,90" },
       { name: "Batata Frita", quantity: 1, price: "R$ 15,00" },
       { name: "Refrigerante", quantity: 1, price: "R$ 15,00" },
-    ]
+    ],
+    paymentMethod: "credit"
   },
   {
     id: "#ORD-002",
@@ -57,7 +61,8 @@ const mockOrders: Order[] = [
     address: "Av. Paulista, 1000",
     orderItems: [
       { name: "Pizza Média", quantity: 1, price: "R$ 32,50" },
-    ]
+    ],
+    paymentMethod: "pix"
   },
   {
     id: "#ORD-003",
@@ -70,7 +75,8 @@ const mockOrders: Order[] = [
     address: "Rua Augusta, 500",
     orderItems: [
       { name: "Combo Família", quantity: 1, price: "R$ 78,00" },
-    ]
+    ],
+    paymentMethod: "cash"
   },
   {
     id: "#ORD-004",
@@ -84,7 +90,8 @@ const mockOrders: Order[] = [
     orderItems: [
       { name: "Salada Caesar", quantity: 1, price: "R$ 25,20" },
       { name: "Suco Natural", quantity: 2, price: "R$ 10,00" },
-    ]
+    ],
+    paymentMethod: "debit"
   },
   {
     id: "#ORD-005",
@@ -98,7 +105,8 @@ const mockOrders: Order[] = [
     orderItems: [
       { name: "Parmegiana", quantity: 1, price: "R$ 45,75" },
       { name: "Água Mineral", quantity: 2, price: "R$ 9,00" },
-    ]
+    ],
+    paymentMethod: "credit"
   },
 ];
 

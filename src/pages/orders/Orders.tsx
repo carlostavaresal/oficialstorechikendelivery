@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -21,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { HomeIcon } from "lucide-react";
 import OrderModal from "@/components/orders/OrderModal";
+import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 
 interface OrderItem {
   name: string;
@@ -38,6 +40,7 @@ interface Order {
   address: string;
   phone?: string;
   orderItems?: OrderItem[];
+  paymentMethod?: PaymentMethod;
 }
 
 const mockOrders: Order[] = [
@@ -54,7 +57,8 @@ const mockOrders: Order[] = [
       { name: "X-Burger", quantity: 1, price: "R$ 24,90" },
       { name: "Batata Frita", quantity: 1, price: "R$ 15,00" },
       { name: "Refrigerante", quantity: 1, price: "R$ 15,00" },
-    ]
+    ],
+    paymentMethod: "credit"
   },
   {
     id: "#ORD-002",
@@ -67,7 +71,8 @@ const mockOrders: Order[] = [
     phone: "11988776655",
     orderItems: [
       { name: "Pizza Média", quantity: 1, price: "R$ 32,50" },
-    ]
+    ],
+    paymentMethod: "pix"
   },
   {
     id: "#ORD-003",
@@ -77,6 +82,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 5, 9, 45),
     items: 5,
     address: "Rua Augusta, 500",
+    paymentMethod: "cash"
   },
   {
     id: "#ORD-004",
@@ -86,6 +92,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 4, 18, 22),
     items: 4,
     address: "Alameda Santos, 45",
+    paymentMethod: "debit"
   },
   {
     id: "#ORD-005",
@@ -95,6 +102,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 4, 12, 10),
     items: 3,
     address: "Rua Oscar Freire, 200",
+    paymentMethod: "credit"
   },
   {
     id: "#ORD-006",
@@ -104,6 +112,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 5, 8, 25),
     items: 2,
     address: "Av. Rebouças, 1500",
+    paymentMethod: "pix"
   },
   {
     id: "#ORD-007",
@@ -113,6 +122,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 5, 11, 40),
     items: 6,
     address: "Rua Consolação, 800",
+    paymentMethod: "cash"
   },
   {
     id: "#ORD-008",
@@ -122,6 +132,7 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 4, 17, 15),
     items: 2,
     address: "Av. Brigadeiro Faria Lima, 3000",
+    paymentMethod: "credit"
   },
 ];
 
