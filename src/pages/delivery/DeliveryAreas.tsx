@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -155,8 +154,8 @@ const DeliveryAreas = () => {
       </div>
       
       <DeliveryZoneModal 
-        open={showAddModal}
-        onOpenChange={setShowAddModal}
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
         existingZone={editingZone}
         onSave={(zone) => {
           if (editingZone) {
