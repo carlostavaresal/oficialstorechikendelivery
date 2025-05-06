@@ -1,7 +1,7 @@
 
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FormControl, FormItem, FormLabel } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { CreditCard, Banknote, Coins } from "lucide-react";
 
 export type PaymentMethod = "cash" | "pix" | "credit" | "debit";
@@ -25,37 +25,29 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         onValueChange={(val) => onChange(val as PaymentMethod)}
         className="grid grid-cols-2 gap-3"
       >
-        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer data-[state=checked]:border-primary">
-          <FormControl>
-            <RadioGroupItem value="cash" className="sr-only" />
-          </FormControl>
+        <div className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer ${value === "cash" ? "border-primary" : ""}`}>
+          <RadioGroupItem value="cash" id="cash" />
           <Banknote className="h-5 w-5 text-muted-foreground" />
-          <FormLabel className="font-normal cursor-pointer">Dinheiro</FormLabel>
-        </FormItem>
+          <Label htmlFor="cash" className="font-normal cursor-pointer">Dinheiro</Label>
+        </div>
         
-        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer data-[state=checked]:border-primary">
-          <FormControl>
-            <RadioGroupItem value="pix" className="sr-only" />
-          </FormControl>
+        <div className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer ${value === "pix" ? "border-primary" : ""}`}>
+          <RadioGroupItem value="pix" id="pix" />
           <Coins className="h-5 w-5 text-muted-foreground" />
-          <FormLabel className="font-normal cursor-pointer">Pix</FormLabel>
-        </FormItem>
+          <Label htmlFor="pix" className="font-normal cursor-pointer">Pix</Label>
+        </div>
         
-        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer data-[state=checked]:border-primary">
-          <FormControl>
-            <RadioGroupItem value="credit" className="sr-only" />
-          </FormControl>
+        <div className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer ${value === "credit" ? "border-primary" : ""}`}>
+          <RadioGroupItem value="credit" id="credit" />
           <CreditCard className="h-5 w-5 text-muted-foreground" />
-          <FormLabel className="font-normal cursor-pointer">Cartão de Crédito</FormLabel>
-        </FormItem>
+          <Label htmlFor="credit" className="font-normal cursor-pointer">Cartão de Crédito</Label>
+        </div>
         
-        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer data-[state=checked]:border-primary">
-          <FormControl>
-            <RadioGroupItem value="debit" className="sr-only" />
-          </FormControl>
+        <div className={`flex items-center space-x-3 space-y-0 rounded-md border p-3 cursor-pointer ${value === "debit" ? "border-primary" : ""}`}>
+          <RadioGroupItem value="debit" id="debit" />
           <CreditCard className="h-5 w-5 text-muted-foreground" />
-          <FormLabel className="font-normal cursor-pointer">Cartão de Débito</FormLabel>
-        </FormItem>
+          <Label htmlFor="debit" className="font-normal cursor-pointer">Cartão de Débito</Label>
+        </div>
       </RadioGroup>
     </div>
   );
