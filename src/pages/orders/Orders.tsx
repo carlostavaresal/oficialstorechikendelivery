@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Table,
@@ -21,6 +20,13 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { HomeIcon } from "lucide-react";
+import OrderModal from "@/components/orders/OrderModal";
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: string;
+}
 
 interface Order {
   id: string;
@@ -30,6 +36,8 @@ interface Order {
   date: Date;
   items: number;
   address: string;
+  phone?: string;
+  orderItems?: OrderItem[];
 }
 
 const mockOrders: Order[] = [
@@ -41,6 +49,12 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 4, 15, 30),
     items: 3,
     address: "Rua das Flores, 123",
+    phone: "11999887766",
+    orderItems: [
+      { name: "X-Burger", quantity: 1, price: "R$ 24,90" },
+      { name: "Batata Frita", quantity: 1, price: "R$ 15,00" },
+      { name: "Refrigerante", quantity: 1, price: "R$ 15,00" },
+    ]
   },
   {
     id: "#ORD-002",
@@ -50,6 +64,10 @@ const mockOrders: Order[] = [
     date: new Date(2025, 4, 5, 10, 15),
     items: 2,
     address: "Av. Paulista, 1000",
+    phone: "11988776655",
+    orderItems: [
+      { name: "Pizza Média", quantity: 1, price: "R$ 32,50" },
+    ]
   },
   {
     id: "#ORD-003",
@@ -138,6 +156,14 @@ const getStatusLabel = (status: Order["status"]) => {
 };
 
 const Orders: React.FC = () => {
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenOrderDetails = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -176,7 +202,11 @@ const Orders: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {mockOrders.map((order) => (
-                  <TableRow key={order.id}>
+                  <TableRow 
+                    key={order.id}
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() => handleOpenOrderDetails(order)}
+                  >
                     <TableCell className="font-medium">{order.id}</TableCell>
                     <TableCell>{order.customer}</TableCell>
                     <TableCell>
@@ -202,6 +232,12 @@ const Orders: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <OrderModal 
+        order={selectedOrder}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </DashboardLayout>
   );
 };

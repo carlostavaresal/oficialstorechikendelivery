@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import OrderModal from "@/components/orders/OrderModal";
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: string;
+}
 
 interface Order {
   id: string;
@@ -20,6 +27,9 @@ interface Order {
   total: string;
   date: Date;
   items: number;
+  phone?: string;
+  orderItems?: OrderItem[];
+  address?: string;
 }
 
 const mockOrders: Order[] = [
@@ -30,6 +40,13 @@ const mockOrders: Order[] = [
     total: "R$ 54,90",
     date: new Date(2025, 4, 4, 15, 30),
     items: 3,
+    phone: "11999887766",
+    address: "Rua das Flores, 123",
+    orderItems: [
+      { name: "X-Burger", quantity: 1, price: "R$ 24,90" },
+      { name: "Batata Frita", quantity: 1, price: "R$ 15,00" },
+      { name: "Refrigerante", quantity: 1, price: "R$ 15,00" },
+    ]
   },
   {
     id: "#ORD-002",
@@ -38,6 +55,11 @@ const mockOrders: Order[] = [
     total: "R$ 32,50",
     date: new Date(2025, 4, 5, 10, 15),
     items: 2,
+    phone: "11988776655",
+    address: "Av. Paulista, 1000",
+    orderItems: [
+      { name: "Pizza Média", quantity: 1, price: "R$ 32,50" },
+    ]
   },
   {
     id: "#ORD-003",
@@ -46,6 +68,11 @@ const mockOrders: Order[] = [
     total: "R$ 78,00",
     date: new Date(2025, 4, 5, 9, 45),
     items: 5,
+    phone: "11977665544",
+    address: "Rua Augusta, 500",
+    orderItems: [
+      { name: "Combo Família", quantity: 1, price: "R$ 78,00" },
+    ]
   },
   {
     id: "#ORD-004",
@@ -54,6 +81,12 @@ const mockOrders: Order[] = [
     total: "R$ 45,20",
     date: new Date(2025, 4, 4, 18, 22),
     items: 4,
+    phone: "11966554433",
+    address: "Alameda Santos, 45",
+    orderItems: [
+      { name: "Salada Caesar", quantity: 1, price: "R$ 25,20" },
+      { name: "Suco Natural", quantity: 2, price: "R$ 10,00" },
+    ]
   },
   {
     id: "#ORD-005",
@@ -62,6 +95,12 @@ const mockOrders: Order[] = [
     total: "R$ 63,75",
     date: new Date(2025, 4, 4, 12, 10),
     items: 3,
+    phone: "11955443322",
+    address: "Rua Consolação, 800",
+    orderItems: [
+      { name: "Parmegiana", quantity: 1, price: "R$ 45,75" },
+      { name: "Água Mineral", quantity: 2, price: "R$ 9,00" },
+    ]
   },
 ];
 
@@ -96,6 +135,14 @@ const getStatusLabel = (status: Order["status"]) => {
 };
 
 const RecentOrders: React.FC = () => {
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenOrderDetails = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
       <div className="flex items-center justify-between border-b px-6 py-4">
@@ -121,7 +168,11 @@ const RecentOrders: React.FC = () => {
           </TableHeader>
           <TableBody>
             {mockOrders.map((order) => (
-              <TableRow key={order.id}>
+              <TableRow 
+                key={order.id}
+                className="cursor-pointer hover:bg-muted"
+                onClick={() => handleOpenOrderDetails(order)}
+              >
                 <TableCell className="font-medium">{order.id}</TableCell>
                 <TableCell>{order.customer}</TableCell>
                 <TableCell>
@@ -142,6 +193,12 @@ const RecentOrders: React.FC = () => {
           </TableBody>
         </Table>
       </div>
+
+      <OrderModal 
+        order={selectedOrder}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
