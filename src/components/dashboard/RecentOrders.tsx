@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
 
 interface OrderItem {
@@ -182,10 +180,7 @@ const RecentOrders: React.FC = () => {
                 </TableCell>
                 <TableCell>{order.total}</TableCell>
                 <TableCell>
-                  {formatDistanceToNow(order.date, { 
-                    addSuffix: true,
-                    locale: ptBR 
-                  })}
+                  {formatDistanceToNowLocalized(order.date)}
                 </TableCell>
                 <TableCell>{order.items} itens</TableCell>
               </TableRow>

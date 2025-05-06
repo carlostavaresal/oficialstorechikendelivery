@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { WhatsApp, MessageSquare } from "lucide-react";
+import { Phone, MessageSquare } from "lucide-react";
 
 interface OrderItem {
   name: string;
@@ -179,7 +179,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
                 variant="default"
                 disabled={!message || !order.phone}
               >
-                <WhatsApp className="mr-2 h-4 w-4" />
+                <Phone className="mr-2 h-4 w-4" />
                 Enviar WhatsApp
               </Button>
               <Button
