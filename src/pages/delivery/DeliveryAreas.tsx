@@ -44,6 +44,14 @@ const DeliveryAreas = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentZone, setCurrentZone] = useState<DeliveryZone | null>(null);
   const { toast } = useToast();
+  const [businessAddress, setBusinessAddress] = useState({
+    street: "",
+    number: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zipCode: ""
+  });
 
   useEffect(() => {
     // Load zones from localStorage
@@ -51,11 +59,29 @@ const DeliveryAreas = () => {
     if (savedZones) {
       setZones(JSON.parse(savedZones));
     }
+
+    // Load business address from localStorage
+    const savedAddress = localStorage.getItem("businessAddress");
+    if (savedAddress) {
+      setBusinessAddress(JSON.parse(savedAddress));
+    }
   }, []);
 
   const saveZones = (updatedZones: DeliveryZone[]) => {
     setZones(updatedZones);
     localStorage.setItem("deliveryZones", JSON.stringify(updatedZones));
+  };
+
+  const handleUpdateAddress = (address: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  }) => {
+    setBusinessAddress(address);
+    localStorage.setItem("businessAddress", JSON.stringify(address));
   };
 
   const handleOpenModal = (zone?: DeliveryZone) => {
@@ -130,7 +156,10 @@ const DeliveryAreas = () => {
         <Separator />
         
         <div className="grid grid-cols-1 gap-6">
-          <AddressSetupCard />
+          <AddressSetupCard 
+            address={businessAddress}
+            onAddressUpdate={handleUpdateAddress}
+          />
           
           {zones.length === 0 ? (
             <Card>
@@ -199,10 +228,10 @@ const DeliveryAreas = () => {
       </div>
 
       <DeliveryZoneModal 
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onSave={handleSaveZone}
-        zone={currentZone || undefined}
+        order={currentZone || undefined}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
