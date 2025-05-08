@@ -1,118 +1,104 @@
 
-import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Box, Calendar, Clock, History, Home, LogOut, Package, Settings, ShoppingCart, Truck } from "lucide-react";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import {
-  Sidebar as SidebarComponent,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Package,
+  LayoutDashboard,
+  Settings,
+  Map,
+  CreditCard,
+  LogOut,
+  History,
+  ShoppingCart
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const Sidebar: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState("Entrega Rápida");
-  
-  useEffect(() => {
-    // Load company info from localStorage
-    const savedLogo = localStorage.getItem("companyLogo");
-    const savedName = localStorage.getItem("companyName");
-    
-    if (savedLogo) {
-      setCompanyLogo(savedLogo);
-    }
-    
-    if (savedName) {
-      setCompanyName(savedName);
-    }
-  }, []);
+interface SidebarLinkProps {
+  to: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-  
-  const menuItems = [
-    { icon: Home, label: "Dashboard", href: "/", },
-    { icon: ShoppingCart, label: "Pedidos", href: "/orders", badge: "12" },
-    { icon: Box, label: "Produtos", href: "/products" },
-    { icon: Calendar, label: "Agendamentos", href: "/schedule" },
-    { icon: Truck, label: "Entregas", href: "/deliveries" },
-    { icon: History, label: "Histórico", href: "/history" },
-    { icon: Settings, label: "Configurações", href: "/settings" },
-  ];
+const SidebarLink: React.FC<SidebarLinkProps> = ({
+  to,
+  icon: Icon,
+  children,
+}) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
 
   return (
-    <SidebarComponent>
-      <div className="flex h-14 items-center border-b px-4">
-        <Link to="/" className="flex items-center gap-2">
-          {companyLogo ? (
-            <img 
-              src={companyLogo} 
-              alt="Logo"
-              className="h-8 w-8 rounded object-contain" 
-            />
-          ) : (
-            <Package className="h-6 w-6 text-primary" />
-          )}
-          <span className="text-xl font-bold">{companyName}</span>
-        </Link>
+    <Link
+      to={to}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+        isActive
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{children}</span>
+    </Link>
+  );
+};
+
+const Sidebar: React.FC = () => {
+  const { logout } = useAuth();
+  
+  return (
+    <div className="h-full flex flex-col bg-background border-r">
+      <div className="p-6">
+        <h1 className="text-xl font-bold">Entrega Rápida</h1>
       </div>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm",
-                        location.pathname === item.href && "bg-accent"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <Badge variant="default" className="ml-auto">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <Button
-          variant="outline"
-          className="w-full flex items-center justify-start text-destructive"
-          onClick={handleLogout}
+      <nav className="flex-1 overflow-auto py-2 px-4 space-y-1">
+        <SidebarLink to="/" icon={LayoutDashboard}>
+          Dashboard
+        </SidebarLink>
+        <SidebarLink to="/orders" icon={Package}>
+          Pedidos
+        </SidebarLink>
+        <SidebarLink to="/products" icon={ShoppingCart}>
+          Produtos
+        </SidebarLink>
+        <SidebarLink to="/delivery" icon={Map}>
+          Áreas de Entrega
+        </SidebarLink>
+        <SidebarLink to="/payment" icon={CreditCard}>
+          Formas de Pagamento
+        </SidebarLink>
+        <SidebarLink to="/history" icon={History}>
+          Histórico
+        </SidebarLink>
+        <SidebarLink to="/settings" icon={Settings}>
+          Configurações
+        </SidebarLink>
+        
+        <div className="pt-4 mt-4 border-t">
+          <Link 
+            to="/client" 
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-blue-600 hover:bg-blue-50"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            <span>Área do Cliente</span>
+          </Link>
+        </div>
+      </nav>
+      <div className="p-4 mt-auto border-t">
+        <Button 
+          variant="outline" 
+          className="w-full justify-start" 
+          onClick={logout}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="mr-2 h-4 w-4" />
           Sair
         </Button>
-      </SidebarFooter>
-    </SidebarComponent>
+      </div>
+    </div>
   );
 };
 

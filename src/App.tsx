@@ -15,6 +15,9 @@ import DeliveryAreas from "./pages/delivery/DeliveryAreas";
 import PaymentMethods from "./pages/payment/PaymentMethods";
 import History from "./pages/history/History";
 import NotFound from "./pages/NotFound";
+import Catalog from "./pages/client/Catalog";
+import Checkout from "./pages/client/Checkout";
+import Success from "./pages/client/Success";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -29,6 +32,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             
+            {/* Admin Routes - Protected */}
             <Route path="/" element={
               <ProtectedRoute>
                 <Dashboard />
@@ -70,6 +74,11 @@ const App = () => (
                 <History />
               </ProtectedRoute>
             } />
+            
+            {/* Client Routes - Public */}
+            <Route path="/client" element={<Catalog />} />
+            <Route path="/client/checkout" element={<Checkout />} />
+            <Route path="/client/success" element={<Success />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
