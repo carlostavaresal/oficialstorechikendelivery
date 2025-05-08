@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Box, Calendar, Clock, History, Home, Package, Settings, ShoppingCart, Truck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Box, Calendar, Clock, History, Home, LogOut, Package, Settings, ShoppingCart, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sidebar as SidebarComponent,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -14,9 +15,13 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("Entrega Rápida");
   
@@ -33,6 +38,11 @@ const Sidebar: React.FC = () => {
       setCompanyName(savedName);
     }
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
   
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/", },
@@ -92,6 +102,16 @@ const Sidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <Button
+          variant="outline"
+          className="w-full flex items-center justify-start text-destructive"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair
+        </Button>
+      </SidebarFooter>
     </SidebarComponent>
   );
 };
