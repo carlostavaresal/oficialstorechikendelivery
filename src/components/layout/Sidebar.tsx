@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Box, Calendar, Clock, Home, Package, Settings, ShoppingCart, Truck } from "lucide-react";
+import { Box, Calendar, Clock, History, Home, Package, Settings, ShoppingCart, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sidebar as SidebarComponent,
@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
     { icon: Box, label: "Produtos", href: "/products" },
     { icon: Calendar, label: "Agendamentos", href: "/schedule" },
     { icon: Truck, label: "Entregas", href: "/deliveries" },
-    { icon: Clock, label: "Histórico", href: "/history" },
+    { icon: History, label: "Histórico", href: "/history" },
     { icon: Settings, label: "Configurações", href: "/settings" },
   ];
 
