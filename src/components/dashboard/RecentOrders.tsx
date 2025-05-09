@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +13,7 @@ import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
+import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 
 interface OrderItem {
   name: string;
@@ -141,11 +141,66 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
+// This would come from an API in a real app
+const checkForNewOrders = (): Order | null => {
+  // Simulate a 20% chance of receiving a new order
+  if (Math.random() < 0.2) {
+    const newOrder: Order = {
+      id: `#ORD-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      customer: "Novo Cliente",
+      status: "pending",
+      total: `R$ ${(Math.random() * 100).toFixed(2).replace('.', ',')}`,
+      date: new Date(),
+      items: Math.floor(Math.random() * 5) + 1,
+      phone: "11999887766",
+      address: "Rua das Flores, 123",
+      orderItems: [
+        { name: "Item de Exemplo", quantity: 1, price: "R$ 24,90" },
+      ],
+      paymentMethod: "pix"
+    };
+    return newOrder;
+  }
+  return null;
+};
+
 const RecentOrders: React.FC = () => {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const lastOrderCountRef = useRef(orders.length);
+  
+  useEffect(() => {
+    // Check for new orders every 30 seconds
+    const intervalId = setInterval(() => {
+      const newOrder = checkForNewOrders();
+      
+      if (newOrder) {
+        setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]);
+        
+        // Play notification sound
+        playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER, 0.7);
+        
+        // Show toast notification
+        toast({
+          title: "Novo Pedido Recebido!",
+          description: `Pedido ${newOrder.id} de ${newOrder.customer} - ${newOrder.total}`,
+        });
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [toast]);
+  
+  // Play sound when orders are added (for initial page load or external updates)
+  useEffect(() => {
+    // Only play sound if the number of orders has increased
+    if (orders.length > lastOrderCountRef.current) {
+      playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER, 0.7);
+      lastOrderCountRef.current = orders.length;
+    }
+  }, [orders.length]);
 
   const handleOpenOrderDetails = (order: Order) => {
     setSelectedOrder(order);
@@ -163,6 +218,8 @@ const RecentOrders: React.FC = () => {
     );
 
     if (newStatus === "cancelled") {
+      playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
+      
       toast({
         title: "Pedido Cancelado",
         description: `O pedido ${orderId} foi cancelado e o cliente foi notificado`,
