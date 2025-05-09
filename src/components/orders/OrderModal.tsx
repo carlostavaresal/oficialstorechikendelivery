@@ -18,6 +18,7 @@ import { Phone, MessageSquare, Printer, AlertTriangle } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
 import { printOrder } from "@/lib/printUtils";
+import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 
 interface OrderItem {
   name: string;
@@ -146,25 +147,27 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
     });
   };
 
+  const handleStatusChange = (newStatus: Order["status"]) => {
+    if (onStatusChange) {
+      onStatusChange(order.id, newStatus);
+    }
+  };
+
   const handleCancelOrder = () => {
-    if (onStatusChange && order.status !== "cancelled") {
-      // Show confirmation toast
-      toast({
-        title: "Pedido cancelado",
-        description: "O status do pedido foi alterado para cancelado",
-      });
-      
-      // Update order status
-      onStatusChange(order.id, "cancelled");
-      
-      // If phone is available, prepare WhatsApp message for cancellation
-      if (order.phone) {
-        const phoneNumber = formatPhoneForWhatsApp(order.phone);
-        const cancelMessage = encodeURIComponent(
-          `Olá ${order.customer}, seu pedido ${order.id} foi cancelado. Entre em contato conosco se precisar de mais informações.`
-        );
-        window.open(`https://wa.me/${phoneNumber}?text=${cancelMessage}`, "_blank");
-      }
+    if (order.status !== "cancelled") {
+      handleStatusChange("cancelled");
+    }
+  };
+
+  const handleMarkAsProcessing = () => {
+    if (order.status !== "processing") {
+      handleStatusChange("processing");
+    }
+  };
+
+  const handleMarkAsDelivered = () => {
+    if (order.status !== "delivered") {
+      handleStatusChange("delivered");
     }
   };
 
@@ -212,6 +215,37 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
           
           <Separator />
           
+          {/* Status update buttons */}
+          <div className="grid grid-cols-3 gap-2">
+            {order.status !== "processing" && (
+              <Button 
+                variant="secondary" 
+                onClick={handleMarkAsProcessing}
+              >
+                Marcar como Em Preparo
+              </Button>
+            )}
+            
+            {order.status !== "delivered" && (
+              <Button 
+                variant="outline" 
+                onClick={handleMarkAsDelivered}
+              >
+                Marcar como Entregue
+              </Button>
+            )}
+            
+            {order.status !== "cancelled" && (
+              <Button 
+                variant="destructive" 
+                onClick={handleCancelOrder}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Cancelar
+              </Button>
+            )}
+          </div>
+          
           {/* Print button section */}
           <div>
             <Button 
@@ -223,20 +257,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
               Imprimir 2 vias (Cliente/Entregador)
             </Button>
           </div>
-
-          {/* Cancel order button - only show if the order is not already cancelled */}
-          {order.status !== "cancelled" && (
-            <div>
-              <Button 
-                variant="destructive" 
-                className="w-full" 
-                onClick={handleCancelOrder}
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Cancelar Pedido
-              </Button>
-            </div>
-          )}
 
           <Separator />
           

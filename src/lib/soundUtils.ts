@@ -48,4 +48,6 @@ export const playNotificationSound = (
 export const NOTIFICATION_SOUNDS = {
   NEW_ORDER: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
   ORDER_CANCELLED: 'https://assets.mixkit.co/active_storage/sfx/952/952-preview.mp3',
+  ORDER_DELIVERED: 'https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3',
+  ORDER_PROCESSING: 'https://assets.mixkit.co/active_storage/sfx/612/612-preview.mp3',
 };

@@ -141,6 +141,19 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
+// Format WhatsApp number for proper linking
+const formatPhoneForWhatsApp = (phone: string) => {
+  // Remove non-numeric characters
+  const numericOnly = phone.replace(/\D/g, "");
+  
+  // Add country code if not present (assuming Brazil)
+  if (numericOnly.length === 11 || numericOnly.length === 10) {
+    return `55${numericOnly}`;
+  }
+  
+  return numericOnly;
+};
+
 // This would come from an API in a real app
 const checkForNewOrders = (): Order | null => {
   // Simulate a 20% chance of receiving a new order
@@ -187,6 +200,15 @@ const RecentOrders: React.FC = () => {
           title: "Novo Pedido Recebido!",
           description: `Pedido ${newOrder.id} de ${newOrder.customer} - ${newOrder.total}`,
         });
+        
+        // Send WhatsApp notification to the admin (in a real app, you'd use your admin number)
+        // This is just a simulation for demonstration purposes
+        if (newOrder.phone) {
+          const adminMessage = encodeURIComponent(
+            `Novo pedido recebido: ${newOrder.id} de ${newOrder.customer} - ${newOrder.total}`
+          );
+          console.log(`WhatsApp notification would be sent: https://wa.me/${formatPhoneForWhatsApp("11999999999")}?text=${adminMessage}`);
+        }
       }
     }, 30000); // Check every 30 seconds
     
@@ -216,14 +238,54 @@ const RecentOrders: React.FC = () => {
       prevOrder && prevOrder.id === orderId ? 
       { ...prevOrder, status: newStatus } : prevOrder
     );
-
-    if (newStatus === "cancelled") {
-      playNotificationSound(NOTIFICATION_SOUNDS.ORDER_CANCELLED, 0.5);
-      
-      toast({
-        title: "Pedido Cancelado",
-        description: `O pedido ${orderId} foi cancelado e o cliente foi notificado`,
-      });
+    
+    // Find the updated order to send appropriate notification
+    const updatedOrder = orders.find(order => order.id === orderId);
+    
+    if (!updatedOrder) return;
+    
+    let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
+    let statusMessage = "em preparação";
+    let toastTitle = "Status atualizado";
+    
+    switch (newStatus) {
+      case "cancelled":
+        soundToPlay = NOTIFICATION_SOUNDS.ORDER_CANCELLED;
+        statusMessage = "cancelado";
+        toastTitle = "Pedido Cancelado";
+        break;
+      case "delivered":
+        soundToPlay = NOTIFICATION_SOUNDS.ORDER_DELIVERED;
+        statusMessage = "entregue";
+        toastTitle = "Pedido Entregue";
+        break;
+      case "processing":
+        soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
+        statusMessage = "em preparação";
+        toastTitle = "Pedido em Preparação";
+        break;
+      case "pending":
+        soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
+        statusMessage = "aguardando";
+        toastTitle = "Pedido Aguardando";
+        break;
+    }
+    
+    // Play appropriate sound
+    playNotificationSound(soundToPlay, 0.5);
+    
+    // Show toast notification
+    toast({
+      title: toastTitle,
+      description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
+    });
+    
+    // Send WhatsApp notification to customer if phone is available
+    if (updatedOrder.phone) {
+      const message = encodeURIComponent(
+        `Olá ${updatedOrder.customer}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
+      );
+      window.open(`https://wa.me/${formatPhoneForWhatsApp(updatedOrder.phone)}?text=${message}`, "_blank");
     }
   };
 

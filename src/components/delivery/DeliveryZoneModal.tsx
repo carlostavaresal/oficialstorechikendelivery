@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,222 +7,305 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { DeliveryZone } from "@/pages/delivery/DeliveryAreas";
-import { 
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage 
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { formatCurrency } from "@/lib/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, formatDate } from "@/lib/formatters";
+import { Phone, MessageSquare, Printer, AlertTriangle } from "lucide-react";
+import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodDisplay from "@/components/payment/PaymentMethodDisplay";
+import { printOrder } from "@/lib/printUtils";
 
-const deliveryZoneSchema = z.object({
-  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
-  description: z.string().optional(),
-  radius: z.coerce.number().positive("O raio deve ser um número positivo"),
-  deliveryFee: z.coerce.number().min(0, "A taxa deve ser um valor positivo ou zero"),
-  minOrderValue: z.coerce.number().min(0, "O valor mínimo deve ser positivo ou zero"),
-  active: z.boolean().default(true),
-});
-
-interface DeliveryZoneModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (zone: DeliveryZone) => void;
-  order?: DeliveryZone;
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: string;
 }
 
-const DeliveryZoneModal = ({ isOpen, onClose, onSave, order }: DeliveryZoneModalProps) => {
-  const form = useForm<z.infer<typeof deliveryZoneSchema>>({
-    resolver: zodResolver(deliveryZoneSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      radius: 5,
-      deliveryFee: 0,
-      minOrderValue: 0,
-      active: true,
-    },
-  });
+interface Order {
+  id: string;
+  customer: string;
+  status: "pending" | "processing" | "delivered" | "cancelled";
+  total: string;
+  date: Date;
+  items: number;
+  phone?: string;
+  orderItems?: OrderItem[];
+  address?: string;
+  paymentMethod?: PaymentMethod;
+}
 
-  useEffect(() => {
-    if (order) {
-      form.reset({
-        name: order.name,
-        description: order.description || "",
-        radius: order.radius,
-        deliveryFee: order.deliveryFee,
-        minOrderValue: order.minOrderValue,
-        active: order.active,
-      });
-    } else {
-      form.reset({
-        name: "",
-        description: "",
-        radius: 5,
-        deliveryFee: 0,
-        minOrderValue: 0,
-        active: true,
-      });
+interface OrderModalProps {
+  order: Order | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onStatusChange?: (orderId: string, status: Order["status"]) => void;
+}
+
+const getStatusBadgeVariant = (status: Order["status"]) => {
+  switch (status) {
+    case "delivered":
+      return "outline";
+    case "processing":
+      return "secondary";
+    case "pending":
+      return "default";
+    case "cancelled":
+      return "destructive";
+    default:
+      return "outline";
+  }
+};
+
+const getStatusLabel = (status: Order["status"]) => {
+  switch (status) {
+    case "delivered":
+      return "Entregue";
+    case "processing":
+      return "Em preparo";
+    case "pending":
+      return "Aguardando";
+    case "cancelled":
+      return "Cancelado";
+    default:
+      return status;
+  }
+};
+
+const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange }) => {
+  const { toast } = useToast();
+  const [message, setMessage] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    order?.paymentMethod || "cash"
+  );
+
+  if (!order) return null;
+
+  const formatPhoneForWhatsApp = (phone: string) => {
+    // Remove non-numeric characters
+    const numericOnly = phone.replace(/\D/g, "");
+    
+    // Add country code if not present (assuming Brazil)
+    if (numericOnly.length === 11 || numericOnly.length === 10) {
+      return `55${numericOnly}`;
     }
-  }, [order, form]);
+    
+    return numericOnly;
+  };
 
-  const onSubmit = (values: z.infer<typeof deliveryZoneSchema>) => {
-    onSave({
-      id: order?.id || "",
-      ...values
+  const handleWhatsAppMessage = () => {
+    if (!order.phone) {
+      toast({
+        title: "Erro",
+        description: "Número de telefone do cliente não disponível",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const phoneNumber = formatPhoneForWhatsApp(order.phone);
+    const encodedMessage = encodeURIComponent(
+      `Olá ${order.customer}, sobre seu pedido ${order.id}: ${message}`
+    );
+
+    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, "_blank");
+    
+    toast({
+      title: "WhatsApp aberto",
+      description: "Mensagem preparada para envio",
     });
   };
 
+  const handleSavePaymentMethod = () => {
+    // In a real app, this would update the order in the database
+    toast({
+      title: "Forma de pagamento salva",
+      description: `Forma de pagamento definida como ${getPaymentMethodLabel(paymentMethod)}`,
+    });
+  };
+
+  const getPaymentMethodLabel = (method: PaymentMethod): string => {
+    switch (method) {
+      case "cash": return "Dinheiro";
+      case "pix": return "Pix";
+      case "credit": return "Cartão de Crédito";
+      case "debit": return "Cartão de Débito";
+      default: return "Desconhecido";
+    }
+  };
+
+  const handlePrintOrder = () => {
+    printOrder(order, 2); // Print 2 copies: one for customer and one for delivery person
+    
+    toast({
+      title: "Imprimindo pedido",
+      description: "Enviando 2 vias para impressão: cliente e entregador",
+    });
+  };
+
+  const handleCancelOrder = () => {
+    if (onStatusChange && order.status !== "cancelled") {
+      // Show confirmation toast
+      toast({
+        title: "Pedido cancelado",
+        description: "O status do pedido foi alterado para cancelado",
+      });
+      
+      // Update order status
+      onStatusChange(order.id, "cancelled");
+      
+      // If phone is available, prepare WhatsApp message for cancellation
+      if (order.phone) {
+        const phoneNumber = formatPhoneForWhatsApp(order.phone);
+        const cancelMessage = encodeURIComponent(
+          `Olá ${order.customer}, seu pedido ${order.id} foi cancelado. Entre em contato conosco se precisar de mais informações.`
+        );
+        window.open(`https://wa.me/${phoneNumber}?text=${cancelMessage}`, "_blank");
+      }
+    }
+  };
+
+  const orderItems = order.orderItems || [
+    { name: "Item do pedido", quantity: 1, price: "R$ 25,00" },
+    { name: "Item adicional", quantity: 2, price: "R$ 15,00" },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {order ? "Editar Zona de Entrega" : "Nova Zona de Entrega"}
+          <DialogTitle className="flex items-center justify-between">
+            <span>Detalhes do Pedido {order.id}</span>
+            <Badge variant={getStatusBadgeVariant(order.status)}>
+              {getStatusLabel(order.status)}
+            </Badge>
           </DialogTitle>
           <DialogDescription>
-            Defina os detalhes da área de entrega e suas condições
+            Pedido de {order.customer} • {formatDate(order.date)}
           </DialogDescription>
         </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Zona</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Centro, Zona Norte" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Descrição opcional da área de entrega"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="radius"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Raio (km)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.1" {...field} />
-                    </FormControl>
-                    <FormDescription>Distância em quilômetros</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="deliveryFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Taxa de Entrega</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        onChange={field.onChange}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {formatCurrency(form.watch("deliveryFee") || 0)}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="minOrderValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pedido Mínimo</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number"
-                        step="0.01"
-                        onChange={field.onChange}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {formatCurrency(form.watch("minOrderValue") || 0)}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-medium mb-2">Itens do Pedido</h3>
+            <div className="space-y-2">
+              {orderItems.map((item, index) => (
+                <div key={index} className="flex justify-between">
+                  <span>
+                    {item.quantity}x {item.name}
+                  </span>
+                  <span className="font-medium">{item.price}</span>
+                </div>
+              ))}
             </div>
-            
-            <FormField
-              control={form.control}
-              name="active"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Ativa</FormLabel>
-                    <FormDescription>
-                      Determina se esta zona está disponível para entrega
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
+          </div>
+          
+          <Separator />
+          
+          <div className="flex justify-between font-semibold">
+            <span>Total</span>
+            <span>{order.total}</span>
+          </div>
+          
+          <Separator />
+          
+          {/* Print button section */}
+          <div>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handlePrintOrder}
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir 2 vias (Cliente/Entregador)
+            </Button>
+          </div>
+
+          {/* Cancel order button - only show if the order is not already cancelled */}
+          {order.status !== "cancelled" && (
+            <div>
+              <Button 
+                variant="destructive" 
+                className="w-full" 
+                onClick={handleCancelOrder}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Cancelar Pedido
               </Button>
-              <Button type="submit">Salvar</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </div>
+          )}
+
+          <Separator />
+          
+          {/* Utiliza o novo componente com visual destacado */}
+          <PaymentMethodDisplay 
+            selectedMethod={paymentMethod}
+            onMethodChange={setPaymentMethod}
+            onSave={handleSavePaymentMethod}
+          />
+
+          {order.phone && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-medium mb-1">Telefone</h3>
+                <p className="text-sm text-muted-foreground">{order.phone}</p>
+              </div>
+            </>
+          )}
+
+          {order.address && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-medium mb-1">Endereço de Entrega</h3>
+                <p className="text-sm text-muted-foreground">{order.address}</p>
+              </div>
+            </>
+          )}
+          
+          <Separator />
+          
+          <div>
+            <h3 className="font-medium mb-2">Contato com Cliente</h3>
+            <Textarea
+              placeholder="Digite uma mensagem para o cliente sobre o pedido..."
+              className="mb-2"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleWhatsAppMessage}
+                className="w-full"
+                variant="default"
+                disabled={!message || !order.phone}
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Enviar WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!message || !order.phone}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                SMS
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default DeliveryZoneModal;
+export default OrderModal;
