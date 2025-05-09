@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Phone, MessageSquare, Printer } from "lucide-react";
+import { Phone, MessageSquare, Printer, AlertTriangle } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
 import { printOrder } from "@/lib/printUtils";
@@ -42,6 +42,7 @@ interface OrderModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
+  onStatusChange?: (orderId: string, status: Order["status"]) => void;
 }
 
 const getStatusBadgeVariant = (status: Order["status"]) => {
@@ -74,7 +75,7 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
-const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
+const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange }) => {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
@@ -145,6 +146,28 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
     });
   };
 
+  const handleCancelOrder = () => {
+    if (onStatusChange && order.status !== "cancelled") {
+      // Show confirmation toast
+      toast({
+        title: "Pedido cancelado",
+        description: "O status do pedido foi alterado para cancelado",
+      });
+      
+      // Update order status
+      onStatusChange(order.id, "cancelled");
+      
+      // If phone is available, prepare WhatsApp message for cancellation
+      if (order.phone) {
+        const phoneNumber = formatPhoneForWhatsApp(order.phone);
+        const cancelMessage = encodeURIComponent(
+          `Olá ${order.customer}, seu pedido ${order.id} foi cancelado. Entre em contato conosco se precisar de mais informações.`
+        );
+        window.open(`https://wa.me/${phoneNumber}?text=${cancelMessage}`, "_blank");
+      }
+    }
+  };
+
   const orderItems = order.orderItems || [
     { name: "Item do pedido", quantity: 1, price: "R$ 25,00" },
     { name: "Item adicional", quantity: 2, price: "R$ 15,00" },
@@ -200,6 +223,20 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
               Imprimir 2 vias (Cliente/Entregador)
             </Button>
           </div>
+
+          {/* Cancel order button - only show if the order is not already cancelled */}
+          {order.status !== "cancelled" && (
+            <div>
+              <Button 
+                variant="destructive" 
+                className="w-full" 
+                onClick={handleCancelOrder}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Cancelar Pedido
+              </Button>
+            </div>
+          )}
 
           <Separator />
           

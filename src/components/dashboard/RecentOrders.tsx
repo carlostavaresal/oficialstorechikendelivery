@@ -13,6 +13,7 @@ import {
 import { formatDistanceToNowLocalized } from "@/lib/formatters";
 import OrderModal from "@/components/orders/OrderModal";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import { useToast } from "@/hooks/use-toast";
 
 interface OrderItem {
   name: string;
@@ -141,12 +142,32 @@ const getStatusLabel = (status: Order["status"]) => {
 };
 
 const RecentOrders: React.FC = () => {
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
+  };
+
+  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
+    setOrders(orders.map(order => 
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+    
+    setSelectedOrder(prevOrder => 
+      prevOrder && prevOrder.id === orderId ? 
+      { ...prevOrder, status: newStatus } : prevOrder
+    );
+
+    if (newStatus === "cancelled") {
+      toast({
+        title: "Pedido Cancelado",
+        description: `O pedido ${orderId} foi cancelado e o cliente foi notificado`,
+      });
+    }
   };
 
   return (
@@ -173,10 +194,10 @@ const RecentOrders: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockOrders.map((order) => (
+            {orders.map((order) => (
               <TableRow 
                 key={order.id}
-                className="cursor-pointer hover:bg-muted"
+                className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
                 onClick={() => handleOpenOrderDetails(order)}
               >
                 <TableCell className="font-medium">{order.id}</TableCell>
@@ -201,6 +222,7 @@ const RecentOrders: React.FC = () => {
         order={selectedOrder}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onStatusChange={handleStatusChange}
       />
     </div>
   );
