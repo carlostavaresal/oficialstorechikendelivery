@@ -28,6 +28,7 @@ const formSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
   address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
+  paymentMethod: z.enum(["cash", "credit", "debit", "pix"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -35,7 +36,6 @@ type FormValues = z.infer<typeof formSchema>;
 const Checkout = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<{id: string, quantity: number, notes: string}[]>([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("cash");
   const [itemWithNoteId, setItemWithNoteId] = useState<string | null>(null);
   const [itemNote, setItemNote] = useState<string>("");
   
@@ -48,6 +48,7 @@ const Checkout = () => {
       name: "",
       phone: "",
       address: "",
+      paymentMethod: "cash",
     },
   });
 
@@ -114,6 +115,11 @@ const Checkout = () => {
       title: "Item removido",
       description: "Item removido do carrinho",
     });
+    
+    // Update localStorage
+    localStorage.setItem('clientCart', JSON.stringify(
+      cart.filter(item => item.id !== id)
+    ));
   };
 
   const onSubmit = (data: FormValues) => {
@@ -135,7 +141,7 @@ const Checkout = () => {
       customerName: data.name,
       customerPhone: data.phone,
       customerAddress: data.address,
-      paymentMethod: selectedPaymentMethod,
+      paymentMethod: data.paymentMethod,
       items: cart.map(item => {
         const product = getProduct(item.id);
         return {
@@ -344,13 +350,24 @@ const Checkout = () => {
                       )}
                     />
                     
-                    <div className="space-y-2">
-                      <FormLabel>Forma de Pagamento</FormLabel>
-                      <PaymentMethodSelector
-                        value={selectedPaymentMethod}
-                        onChange={setSelectedPaymentMethod}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="paymentMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Forma de Pagamento</FormLabel>
+                          <FormControl>
+                            <div className="mt-1">
+                              <PaymentMethodSelector
+                                value={field.value}
+                                onChange={field.onChange}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
                     <Button type="submit" className="w-full">
                       Finalizar Pedido

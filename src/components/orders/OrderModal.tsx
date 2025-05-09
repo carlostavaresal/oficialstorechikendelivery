@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -208,6 +209,16 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
             onMethodChange={setPaymentMethod}
             onSave={handleSavePaymentMethod}
           />
+
+          {order.phone && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-medium mb-1">Telefone</h3>
+                <p className="text-sm text-muted-foreground">{order.phone}</p>
+              </div>
+            </>
+          )}
 
           {order.address && (
             <>

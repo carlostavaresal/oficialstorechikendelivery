@@ -1,253 +1,273 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, Pencil, Trash2 } from "lucide-react";
-import { 
-  Card,
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MapPin, Plus, HomeIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/formatters";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import DeliveryZoneModal from "@/components/delivery/DeliveryZoneModal";
 import AddressSetupCard from "@/components/delivery/AddressSetupCard";
+import DeliveryZoneModal from "@/components/delivery/DeliveryZoneModal";
 
 export interface DeliveryZone {
   id: string;
   name: string;
-  description?: string;
   radius: number;
+  description: string;
   deliveryFee: number;
   minOrderValue: number;
   active: boolean;
 }
 
-const DeliveryAreas = () => {
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+const mockDeliveryZones: DeliveryZone[] = [
+  {
+    id: "zone1",
+    name: "Centro",
+    radius: 3,
+    description: "Região central da cidade",
+    deliveryFee: 5.0,
+    minOrderValue: 15.0,
+    active: true,
+  },
+  {
+    id: "zone2",
+    name: "Zona Sul",
+    radius: 5,
+    description: "Região sul da cidade",
+    deliveryFee: 8.0,
+    minOrderValue: 20.0,
+    active: true,
+  },
+  {
+    id: "zone3",
+    name: "Zona Leste",
+    radius: 7,
+    description: "Região leste da cidade",
+    deliveryFee: 10.0,
+    minOrderValue: 25.0,
+    active: false,
+  },
+  {
+    id: "zone4",
+    name: "Zona Norte",
+    radius: 8,
+    description: "Região norte da cidade",
+    deliveryFee: 12.0,
+    minOrderValue: 30.0,
+    active: true,
+  },
+];
+
+interface BusinessAddress {
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+const DeliveryAreas: React.FC = () => {
+  const [zones, setZones] = useState<DeliveryZone[]>(mockDeliveryZones);
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentZone, setCurrentZone] = useState<DeliveryZone | null>(null);
-  const { toast } = useToast();
-  const [businessAddress, setBusinessAddress] = useState({
-    street: "",
-    number: "",
-    neighborhood: "",
-    city: "",
-    state: "",
-    zipCode: ""
+  const [businessAddress, setBusinessAddress] = useState<BusinessAddress>({
+    street: "Avenida Paulista",
+    number: "1000",
+    complement: "Sala 123",
+    neighborhood: "Bela Vista",
+    city: "São Paulo",
+    state: "SP",
+    postalCode: "01310-100",
+    latitude: -23.5673,
+    longitude: -46.6494,
   });
 
-  useEffect(() => {
-    // Load zones from localStorage
-    const savedZones = localStorage.getItem("deliveryZones");
-    if (savedZones) {
-      setZones(JSON.parse(savedZones));
-    }
-
-    // Load business address from localStorage
-    const savedAddress = localStorage.getItem("businessAddress");
-    if (savedAddress) {
-      setBusinessAddress(JSON.parse(savedAddress));
-    }
-  }, []);
-
-  const saveZones = (updatedZones: DeliveryZone[]) => {
-    setZones(updatedZones);
-    localStorage.setItem("deliveryZones", JSON.stringify(updatedZones));
-  };
-
-  const handleUpdateAddress = (address: {
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  }) => {
-    setBusinessAddress(address);
-    localStorage.setItem("businessAddress", JSON.stringify(address));
-  };
-
-  const handleOpenModal = (zone?: DeliveryZone) => {
-    if (zone) {
-      setCurrentZone(zone);
-    } else {
-      setCurrentZone(null);
-    }
+  const handleAddNewZone = () => {
+    const newZone: DeliveryZone = {
+      id: `zone${Date.now()}`,
+      name: "",
+      radius: 5,
+      description: "",
+      deliveryFee: 8.0,
+      minOrderValue: 20.0,
+      active: true,
+    };
+    setCurrentZone(newZone);
     setIsModalOpen(true);
   };
 
-  const handleSaveZone = (zone: DeliveryZone) => {
-    if (currentZone) {
+  const handleEditZone = (zone: DeliveryZone) => {
+    setCurrentZone(zone);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveZone = (updatedZone: DeliveryZone) => {
+    if (zones.some((z) => z.id === updatedZone.id)) {
       // Update existing zone
-      const updatedZones = zones.map(z => 
-        z.id === zone.id ? zone : z
+      setZones((currentZones) =>
+        currentZones.map((z) => (z.id === updatedZone.id ? updatedZone : z))
       );
-      saveZones(updatedZones);
-      toast({
-        title: "Zona de entrega atualizada",
-        description: `${zone.name} foi atualizada com sucesso.`
-      });
     } else {
       // Add new zone
-      const newZone = {
-        ...zone,
-        id: `zone-${Date.now()}`
-      };
-      saveZones([...zones, newZone]);
-      toast({
-        title: "Zona de entrega criada",
-        description: `${newZone.name} foi adicionada com sucesso.`
-      });
+      setZones((currentZones) => [...currentZones, updatedZone]);
     }
     setIsModalOpen(false);
+    setCurrentZone(null);
   };
 
-  const handleDelete = () => {
-    if (currentZone) {
-      const filteredZones = zones.filter(zone => zone.id !== currentZone.id);
-      saveZones(filteredZones);
-      toast({
-        title: "Zona de entrega removida",
-        description: `${currentZone.name} foi removida com sucesso.`
-      });
-      setIsDeleteDialogOpen(false);
-      setCurrentZone(null);
-    }
+  const handleAddressUpdate = (address: BusinessAddress) => {
+    setBusinessAddress(address);
   };
 
-  const handleOpenDeleteDialog = (zone: DeliveryZone) => {
-    setCurrentZone(zone);
-    setIsDeleteDialogOpen(true);
-  };
+  const filteredZones = selectedFilter === "all"
+    ? zones
+    : selectedFilter === "active"
+    ? zones.filter((zone) => zone.active)
+    : zones.filter((zone) => !zone.active);
+
+  // Format the full business address as a string
+  const formattedAddress = `${businessAddress.street}, ${businessAddress.number}${
+    businessAddress.complement ? ` - ${businessAddress.complement}` : ""
+  }, ${businessAddress.neighborhood}, ${businessAddress.city} - ${
+    businessAddress.state
+  }, ${businessAddress.postalCode}`;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Áreas de Entrega</h2>
-            <p className="text-muted-foreground">
-              Gerencie as regiões onde seu delivery atende e as taxas de entrega
-            </p>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">
+                    <HomeIcon className="h-3 w-3 mr-1" />
+                    Home
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Áreas de Entrega</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <h1 className="text-3xl font-bold mt-2">Áreas de Entrega</h1>
           </div>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2" />
+          <Button onClick={handleAddNewZone}>
+            <Plus className="h-4 w-4 mr-2" />
             Nova Área
           </Button>
         </div>
 
-        <Separator />
-        
-        <div className="grid grid-cols-1 gap-6">
-          <AddressSetupCard 
-            address={businessAddress}
-            onAddressUpdate={handleUpdateAddress}
-          />
-          
-          {zones.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center h-40">
-                <MapPin className="h-10 w-10 text-muted-foreground mb-2" />
-                <p className="text-muted-foreground text-center">
-                  Nenhuma zona de entrega cadastrada.<br />
-                  Adicione suas áreas de entrega para começar.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {zones.map(zone => (
-                <Card key={zone.id} className={zone.active ? "border-green-200" : ""}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{zone.name}</CardTitle>
-                      {zone.active ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          Ativa
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-100">
-                          Inativa
-                        </Badge>
-                      )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Endereço do Estabelecimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddressSetupCard 
+              address={businessAddress} 
+              onAddressUpdate={handleAddressUpdate} 
+            />
+          </CardContent>
+        </Card>
+
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Zonas de Entrega</h2>
+            <Select
+              value={selectedFilter}
+              onValueChange={setSelectedFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as áreas</SelectItem>
+                <SelectItem value="active">Áreas ativas</SelectItem>
+                <SelectItem value="inactive">Áreas inativas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredZones.map((zone) => (
+              <Card
+                key={zone.id}
+                className={`cursor-pointer transition-all hover:shadow-md ${
+                  !zone.active ? "opacity-60" : ""
+                }`}
+                onClick={() => handleEditZone(zone)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{zone.name}</CardTitle>
+                    <Badge variant={zone.active ? "default" : "outline"}>
+                      {zone.active ? "Ativa" : "Inativa"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {zone.description}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Raio de entrega:</span>
+                      <span className="font-medium">{zone.radius} km</span>
                     </div>
-                    <CardDescription>{zone.description || "Sem descrição"}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Raio:</span>
-                        <span className="font-medium">{zone.radius} km</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Taxa:</span>
-                        <span className="font-medium">{formatCurrency(zone.deliveryFee)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pedido mínimo:</span>
-                        <span className="font-medium">{formatCurrency(zone.minOrderValue)}</span>
-                      </div>
+                    <Separator />
+                    <div className="flex justify-between text-sm">
+                      <span>Taxa de entrega:</span>
+                      <span className="font-medium">
+                        {formatCurrency(zone.deliveryFee)}
+                      </span>
                     </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between pt-0">
-                    <Button variant="outline" size="sm" onClick={() => handleOpenModal(zone)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleOpenDeleteDialog(zone)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
+                    <div className="flex justify-between text-sm">
+                      <span>Pedido mínimo:</span>
+                      <span className="font-medium">
+                        {formatCurrency(zone.minOrderValue)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
-      <DeliveryZoneModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveZone}
-        zone={currentZone || undefined}
-      />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a área de entrega "{currentZone?.name}"?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {currentZone && (
+        <DeliveryZoneModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveZone}
+          zone={currentZone}
+        />
+      )}
     </DashboardLayout>
   );
 };
