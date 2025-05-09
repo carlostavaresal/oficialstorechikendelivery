@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -14,9 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Phone, MessageSquare } from "lucide-react";
+import { Phone, MessageSquare, Printer } from "lucide-react";
 import { PaymentMethod } from "../payment/PaymentMethodSelector";
 import PaymentMethodDisplay from "../payment/PaymentMethodDisplay";
+import { printOrder } from "@/lib/printUtils";
 
 interface OrderItem {
   name: string;
@@ -135,6 +135,15 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
     }
   };
 
+  const handlePrintOrder = () => {
+    printOrder(order, 2); // Print 2 copies: one for customer and one for delivery person
+    
+    toast({
+      title: "Imprimindo pedido",
+      description: "Enviando 2 vias para impressão: cliente e entregador",
+    });
+  };
+
   const orderItems = order.orderItems || [
     { name: "Item do pedido", quantity: 1, price: "R$ 25,00" },
     { name: "Item adicional", quantity: 2, price: "R$ 15,00" },
@@ -177,6 +186,20 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose }) => {
             <span>{order.total}</span>
           </div>
           
+          <Separator />
+          
+          {/* Print button section */}
+          <div>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handlePrintOrder}
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir 2 vias (Cliente/Entregador)
+            </Button>
+          </div>
+
           <Separator />
           
           {/* Utiliza o novo componente com visual destacado */}
