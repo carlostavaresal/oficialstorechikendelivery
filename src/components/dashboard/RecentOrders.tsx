@@ -154,6 +154,13 @@ const formatPhoneForWhatsApp = (phone: string) => {
   return numericOnly;
 };
 
+// Extract order number from order ID for sorting
+const extractOrderNumber = (orderId: string): number => {
+  // Extract the numeric part from strings like "#ORD-001"
+  const match = orderId.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+};
+
 // This would come from an API in a real app
 const checkForNewOrders = (): Order | null => {
   // Simulate a 20% chance of receiving a new order
@@ -190,7 +197,13 @@ const RecentOrders: React.FC = () => {
       const newOrder = checkForNewOrders();
       
       if (newOrder) {
-        setOrders(prevOrders => [newOrder, ...prevOrders.slice(0, 4)]);
+        setOrders(prevOrders => {
+          // Add the new order and sort by order number
+          const updatedOrders = [newOrder, ...prevOrders];
+          return updatedOrders
+            .sort((a, b) => extractOrderNumber(a.id) - extractOrderNumber(b.id))
+            .slice(0, 5); // Keep only the first 5 orders
+        });
         
         // Play notification sound
         playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER, 0.7);
@@ -214,6 +227,13 @@ const RecentOrders: React.FC = () => {
     
     return () => clearInterval(intervalId);
   }, [toast]);
+
+  // Sort orders by number on initial load
+  useEffect(() => {
+    setOrders(prevOrders => 
+      [...prevOrders].sort((a, b) => extractOrderNumber(a.id) - extractOrderNumber(b.id))
+    );
+  }, []);
   
   // Play sound when orders are added (for initial page load or external updates)
   useEffect(() => {

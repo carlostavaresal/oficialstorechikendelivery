@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Table,
@@ -167,6 +167,13 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
+// Extract order number from order ID for sorting
+const extractOrderNumber = (orderId: string): number => {
+  // Extract the numeric part from strings like "#ORD-001"
+  const match = orderId.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+};
+
 // Format WhatsApp number for proper linking
 const formatPhoneForWhatsApp = (phone: string) => {
   // Remove non-numeric characters
@@ -185,6 +192,13 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Sort orders by number on initial load
+  useEffect(() => {
+    setOrders(prevOrders => 
+      [...prevOrders].sort((a, b) => extractOrderNumber(a.id) - extractOrderNumber(b.id))
+    );
+  }, []);
 
   const handleOpenOrderDetails = (order: Order) => {
     setSelectedOrder(order);
