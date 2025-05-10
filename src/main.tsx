@@ -1,5 +1,131 @@
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
 
-createRoot(document.getElementById("root")!).render(<App />);
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import App from "./App.tsx";
+import "./index.css";
+
+// Pages
+import Index from "./pages/Index.tsx";
+import Dashboard from "./pages/dashboard/Dashboard.tsx";
+import Orders from "./pages/orders/Orders.tsx";
+import Products from "./pages/products/Products.tsx";
+import Settings from "./pages/settings/Settings.tsx";
+import ThemeSettings from "./pages/settings/ThemeSettings.tsx";
+import DeliveryAreas from "./pages/delivery/DeliveryAreas.tsx";
+import PaymentMethods from "./pages/payment/PaymentMethods.tsx";
+import History from "./pages/history/History.tsx";
+import Login from "./pages/auth/Login.tsx";
+import NotFound from "./pages/NotFound.tsx";
+import Catalog from "./pages/client/Catalog.tsx";
+import Checkout from "./pages/client/Checkout.tsx";
+import Success from "./pages/client/Success.tsx";
+
+// Components
+import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
+import { Toaster } from "./components/ui/sonner.tsx";
+import { initializeTheme } from "./lib/themeUtils.ts";
+
+// Initialize theme from localStorage or default
+initializeTheme();
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <App />,
+    errorElement: <NotFound />,
+    children: [
+      {
+        index: true,
+        element: <Index />,
+      },
+      {
+        path: "dashboard",
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "orders",
+        element: (
+          <ProtectedRoute>
+            <Orders />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "products",
+        element: (
+          <ProtectedRoute>
+            <Products />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings/theme",
+        element: (
+          <ProtectedRoute>
+            <ThemeSettings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "delivery",
+        element: (
+          <ProtectedRoute>
+            <DeliveryAreas />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "payment",
+        element: (
+          <ProtectedRoute>
+            <PaymentMethods />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "history",
+        element: (
+          <ProtectedRoute>
+            <History />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "catalog",
+        element: <Catalog />,
+      },
+      {
+        path: "checkout",
+        element: <Checkout />,
+      },
+      {
+        path: "success",
+        element: <Success />,
+      },
+    ],
+  },
+]);
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+    <Toaster />
+  </React.StrictMode>
+);

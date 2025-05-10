@@ -1,105 +1,107 @@
-
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState } from "react";
 import {
-  Package,
   LayoutDashboard,
+  ShoppingCart,
+  Package,
   Settings,
-  Map,
+  MapPin,
   CreditCard,
-  LogOut,
-  History,
-  ShoppingCart
+  ClipboardList,
+  Palette,
+  Menu,
+  X,
 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { cn, useMobile } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-interface SidebarLinkProps {
-  to: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
+interface SidebarProps {
+  className?: string;
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = ({
-  to,
-  icon: Icon,
-  children,
-}) => {
+export function Sidebar() {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isMobile = useMobile();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const closeSidebar = () => {
+    setIsCollapsed(true);
+  };
+
+  const menuItems = [
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Pedidos", path: "/orders", icon: ShoppingCart },
+    { name: "Produtos", path: "/products", icon: Package },
+    { name: "Áreas de Entrega", path: "/delivery", icon: MapPin },
+    { name: "Métodos de Pagamento", path: "/payment", icon: CreditCard },
+    { name: "Histórico", path: "/history", icon: ClipboardList },
+    { name: "Configurações", path: "/settings", icon: Settings },
+    { name: "Tema", path: "/settings/theme", icon: Palette },
+  ];
 
   return (
-    <Link
-      to={to}
+    <aside
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-        isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        "flex flex-col space-y-2 bg-sidebar-background text-sidebar-foreground h-full border-r border-sidebar-border transition-all",
+        isCollapsed ? "w-16" : "w-60",
+        !isMobile ? "sticky top-0" : "fixed inset-y-0 left-0 z-50",
+        isMobile && isCollapsed ? "hidden" : "",
+        isMobile && !isCollapsed ? "w-full bg-background/80 backdrop-blur-sm" : "",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-80 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0",
+        "px-2 py-4",
+        "overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-track-rounded scrollbar-thumb-muted",
+        className
       )}
     >
-      <Icon className="h-5 w-5" />
-      <span>{children}</span>
-    </Link>
-  );
-};
-
-const Sidebar: React.FC = () => {
-  const { logout } = useAuth();
-  
-  return (
-    <div className="h-full flex flex-col bg-background border-r">
-      <div className="p-6">
-        <h1 className="text-xl font-bold">Entrega Rápida</h1>
-      </div>
-      <nav className="flex-1 overflow-auto py-2 px-4 space-y-1">
-        <SidebarLink to="/" icon={LayoutDashboard}>
-          Dashboard
-        </SidebarLink>
-        <SidebarLink to="/orders" icon={Package}>
-          Pedidos
-        </SidebarLink>
-        <SidebarLink to="/products" icon={ShoppingCart}>
-          Produtos
-        </SidebarLink>
-        <SidebarLink to="/delivery" icon={Map}>
-          Áreas de Entrega
-        </SidebarLink>
-        <SidebarLink to="/payment" icon={CreditCard}>
-          Formas de Pagamento
-        </SidebarLink>
-        <SidebarLink to="/history" icon={History}>
-          Histórico
-        </SidebarLink>
-        <SidebarLink to="/settings" icon={Settings}>
-          Configurações
-        </SidebarLink>
-        
-        <div className="pt-4 mt-4 border-t">
-          <Link 
-            to="/client" 
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-blue-600 hover:bg-blue-50"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            <span>Área do Cliente</span>
-          </Link>
+      {isMobile && (
+        <div className="mb-4 flex justify-end">
+          <Button variant="ghost" size="icon" onClick={closeSidebar}>
+            <X className="h-5 w-5" />
+          </Button>
         </div>
-      </nav>
-      <div className="p-4 mt-auto border-t">
-        <Button 
-          variant="outline" 
-          className="w-full justify-start" 
-          onClick={logout}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sair
-        </Button>
+      )}
+      <div className="mb-8">
+        <Link to="/" className="flex items-center justify-center">
+          <span className="font-bold text-xl tracking-tight">
+            {isCollapsed ? "Delivery" : "Painel Delivery"}
+          </span>
+        </Link>
       </div>
-    </div>
+      <div className="flex-1">
+        <ul className="space-y-1">
+          {menuItems.map((item) => (
+            <li key={item.name}>
+              <Link
+                to={item.path}
+                className={cn(
+                  "flex items-center space-x-3 rounded-md p-2 font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  location.pathname === item.path
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {!isCollapsed && <span>{item.name}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {!isMobile && (
+        <div className="p-3">
+          <Button variant="outline" className="w-full" onClick={toggleSidebar}>
+            {isCollapsed ? (
+              <Menu className="h-4 w-4" />
+            ) : (
+              <Settings className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      )}
+    </aside>
   );
-};
-
-export default Sidebar;
+}

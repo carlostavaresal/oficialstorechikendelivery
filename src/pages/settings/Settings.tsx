@@ -1,6 +1,6 @@
-
 import React, { useState, useRef } from "react";
-import { Upload, FileImage, UploadCloud, Printer } from "lucide-react";
+import { Upload, FileImage, UploadCloud, Printer, Palette } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 
 const Settings = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("Entrega Rápida");
@@ -181,6 +182,10 @@ const Settings = () => {
     }, 500);
   };
 
+  const handleNavigateToThemeSettings = () => {
+    navigate("/settings/theme");
+  };
+
   React.useEffect(() => {
     // Load saved settings on component mount
     const savedLogo = localStorage.getItem("companyLogo");
@@ -218,11 +223,13 @@ const Settings = () => {
         
         <div className="grid gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Informações da Empresa</CardTitle>
-              <CardDescription>
-                Configure as informações básicas da sua empresa que serão exibidas aos clientes.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Informações da Empresa</CardTitle>
+                <CardDescription>
+                  Configure as informações básicas da sua empresa que serão exibidas aos clientes.
+                </CardDescription>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -278,6 +285,34 @@ const Settings = () => {
               </div>
               
               <Button onClick={handleSaveCompanyInfo}>Salvar Informações</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Aparência e Tema</CardTitle>
+                <CardDescription>
+                  Personalize as cores e a aparência do seu aplicativo de delivery.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Tema e cores</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha um tema de cores que combine com a sua identidade visual.
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleNavigateToThemeSettings} 
+                  className="flex items-center gap-2"
+                >
+                  <Palette className="h-4 w-4" />
+                  Personalizar Tema
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
