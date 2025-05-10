@@ -15,6 +15,7 @@ interface AddressSetupCardProps {
     city: string;
     state: string;
     zipCode: string;
+    complement?: string;
   };
   onAddressUpdate: (address: {
     street: string;
@@ -22,7 +23,8 @@ interface AddressSetupCardProps {
     neighborhood: string;
     city: string;
     state: string;
-    zipCode: string;
+    postalCode: string;  // Renamed to match DeliveryAreas model
+    complement?: string;
   }) => void;
 }
 
@@ -31,7 +33,10 @@ const AddressSetupCard: React.FC<AddressSetupCardProps> = ({
   onAddressUpdate,
 }) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState(address);
+  const [formData, setFormData] = useState({
+    ...address,
+    postalCode: address.zipCode || '',  // Map zipCode to postalCode for internal use
+  });
   const [isEditing, setIsEditing] = useState(!address.street);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,12 +48,28 @@ const AddressSetupCard: React.FC<AddressSetupCardProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddressUpdate(formData);
-    setIsEditing(false);
-    toast({
-      title: "Endereço atualizado",
-      description: "O endereço da empresa foi atualizado com sucesso.",
+    
+    // Ensure all required fields are filled
+    if (!formData.street || !formData.number || !formData.city || !formData.state) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    onAddressUpdate({
+      street: formData.street,
+      number: formData.number,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
+      postalCode: formData.postalCode,
+      complement: formData.complement
     });
+    
+    setIsEditing(false);
   };
 
   const isFormComplete = formData.street && formData.number && formData.city && formData.state;
@@ -62,18 +83,18 @@ const AddressSetupCard: React.FC<AddressSetupCardProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!isEditing ? (
+        {!isEditing && address.street ? (
           <div className="space-y-2">
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 mt-1 flex-shrink-0 text-primary" />
               <div>
                 <p className="font-medium">
-                  {formData.street}, {formData.number}
-                  {formData.neighborhood && `, ${formData.neighborhood}`}
+                  {address.street}, {address.number}
+                  {address.neighborhood && `, ${address.neighborhood}`}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {formData.city} - {formData.state}
-                  {formData.zipCode && `, ${formData.zipCode}`}
+                  {address.city} - {address.state}
+                  {address.zipCode && `, ${address.zipCode}`}
                 </p>
               </div>
             </div>
@@ -139,13 +160,23 @@ const AddressSetupCard: React.FC<AddressSetupCardProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zipCode">CEP</Label>
+                <Label htmlFor="postalCode">CEP</Label>
                 <Input
-                  id="zipCode"
-                  name="zipCode"
-                  value={formData.zipCode}
+                  id="postalCode"
+                  name="postalCode"
+                  value={formData.postalCode}
                   onChange={handleChange}
                   placeholder="00000-000"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="complement">Complemento</Label>
+                <Input
+                  id="complement"
+                  name="complement"
+                  value={formData.complement || ''}
+                  onChange={handleChange}
+                  placeholder="Apto, sala, etc."
                 />
               </div>
             </div>

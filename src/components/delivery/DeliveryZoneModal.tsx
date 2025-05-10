@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,305 +8,268 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, formatDate } from "@/lib/formatters";
-import { Phone, MessageSquare, Printer, AlertTriangle } from "lucide-react";
-import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
-import PaymentMethodDisplay from "@/components/payment/PaymentMethodDisplay";
-import { printOrder } from "@/lib/printUtils";
+import { MapPin, Navigation } from "lucide-react";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { DeliveryZone } from "@/pages/delivery/DeliveryAreas";
 
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: string;
+// Interface for the business address
+interface BusinessAddressProps {
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  complement?: string;
 }
 
-interface Order {
-  id: string;
-  customer: string;
-  status: "pending" | "processing" | "delivered" | "cancelled";
-  total: string;
-  date: Date;
-  items: number;
-  phone?: string;
-  orderItems?: OrderItem[];
-  address?: string;
-  paymentMethod?: PaymentMethod;
-}
-
-interface OrderModalProps {
-  order: Order | null;
+interface DeliveryZoneModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStatusChange?: (orderId: string, status: Order["status"]) => void;
+  zone: DeliveryZone | null;
+  businessAddress: BusinessAddressProps | null;
+  onSave: (zone: DeliveryZone) => void;
 }
 
-const getStatusBadgeVariant = (status: Order["status"]) => {
-  switch (status) {
-    case "delivered":
-      return "outline";
-    case "processing":
-      return "secondary";
-    case "pending":
-      return "default";
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
-
-const getStatusLabel = (status: Order["status"]) => {
-  switch (status) {
-    case "delivered":
-      return "Entregue";
-    case "processing":
-      return "Em preparo";
-    case "pending":
-      return "Aguardando";
-    case "cancelled":
-      return "Cancelado";
-    default:
-      return status;
-  }
-};
-
-const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatusChange }) => {
-  const { toast } = useToast();
-  const [message, setMessage] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    order?.paymentMethod || "cash"
-  );
-
-  if (!order) return null;
-
-  const formatPhoneForWhatsApp = (phone: string) => {
-    // Remove non-numeric characters
-    const numericOnly = phone.replace(/\D/g, "");
-    
-    // Add country code if not present (assuming Brazil)
-    if (numericOnly.length === 11 || numericOnly.length === 10) {
-      return `55${numericOnly}`;
-    }
-    
-    return numericOnly;
+const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  zone, 
+  businessAddress,
+  onSave 
+}) => {
+  // Using default values for a new zone if none is provided
+  const defaultZone: DeliveryZone = {
+    id: "",
+    name: "",
+    radius: 3,
+    fee: 5.00,
+    minTime: 15,
+    maxTime: 30,
+    active: true
   };
 
-  const handleWhatsAppMessage = () => {
-    if (!order.phone) {
-      toast({
-        title: "Erro",
-        description: "Número de telefone do cliente não disponível",
-        variant: "destructive",
-      });
-      return;
+  // Form state based on the zone prop or default values
+  const [formData, setFormData] = useState<DeliveryZone>(zone || defaultZone);
+
+  // Update form when zone prop changes
+  useEffect(() => {
+    if (zone) {
+      setFormData(zone);
+    } else {
+      setFormData(defaultZone);
     }
+  }, [zone]);
 
-    const phoneNumber = formatPhoneForWhatsApp(order.phone);
-    const encodedMessage = encodeURIComponent(
-      `Olá ${order.customer}, sobre seu pedido ${order.id}: ${message}`
-    );
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    // Handle different input types appropriately
+    const parsedValue = type === 'number' ? 
+      (value === '' ? '' : parseFloat(value)) : 
+      value;
 
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, "_blank");
-    
-    toast({
-      title: "WhatsApp aberto",
-      description: "Mensagem preparada para envio",
+    setFormData({
+      ...formData,
+      [name]: parsedValue
     });
   };
 
-  const handleSavePaymentMethod = () => {
-    // In a real app, this would update the order in the database
-    toast({
-      title: "Forma de pagamento salva",
-      description: `Forma de pagamento definida como ${getPaymentMethodLabel(paymentMethod)}`,
-    });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
   };
 
-  const getPaymentMethodLabel = (method: PaymentMethod): string => {
-    switch (method) {
-      case "cash": return "Dinheiro";
-      case "pix": return "Pix";
-      case "credit": return "Cartão de Crédito";
-      case "debit": return "Cartão de Débito";
-      default: return "Desconhecido";
-    }
-  };
-
-  const handlePrintOrder = () => {
-    printOrder(order, 2); // Print 2 copies: one for customer and one for delivery person
+  // Calculate pricing based on radius
+  const calculateFeeByRadius = () => {
+    const baseRate = 3.0;  // Base delivery fee in currency units
+    const ratePerKm = 1.0;  // Additional fee per kilometer
     
-    toast({
-      title: "Imprimindo pedido",
-      description: "Enviando 2 vias para impressão: cliente e entregador",
+    const calculatedFee = baseRate + (formData.radius * ratePerKm);
+    
+    // Update form data with calculated fee
+    setFormData({
+      ...formData,
+      fee: parseFloat(calculatedFee.toFixed(2))
     });
   };
 
-  const handleCancelOrder = () => {
-    if (onStatusChange && order.status !== "cancelled") {
-      // Show confirmation toast
-      toast({
-        title: "Pedido cancelado",
-        description: "O status do pedido foi alterado para cancelado",
-      });
-      
-      // Update order status
-      onStatusChange(order.id, "cancelled");
-      
-      // If phone is available, prepare WhatsApp message for cancellation
-      if (order.phone) {
-        const phoneNumber = formatPhoneForWhatsApp(order.phone);
-        const cancelMessage = encodeURIComponent(
-          `Olá ${order.customer}, seu pedido ${order.id} foi cancelado. Entre em contato conosco se precisar de mais informações.`
-        );
-        window.open(`https://wa.me/${phoneNumber}?text=${cancelMessage}`, "_blank");
-      }
-    }
+  // Calculate delivery time based on radius
+  const calculateDeliveryTime = () => {
+    const baseMinTime = 10;  // Minimum delivery time in minutes
+    const baseMaxTime = 20;  // Base maximum delivery time
+    const timePerKm = 2;     // Additional minutes per kilometer
+    
+    const minTime = baseMinTime + Math.floor(formData.radius * timePerKm * 0.8);
+    const maxTime = baseMaxTime + Math.floor(formData.radius * timePerKm * 1.2);
+    
+    // Update form data with calculated times
+    setFormData({
+      ...formData,
+      minTime,
+      maxTime
+    });
   };
-
-  const orderItems = order.orderItems || [
-    { name: "Item do pedido", quantity: 1, price: "R$ 25,00" },
-    { name: "Item adicional", quantity: 2, price: "R$ 15,00" },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Detalhes do Pedido {order.id}</span>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {getStatusLabel(order.status)}
-            </Badge>
+          <DialogTitle>
+            {zone ? "Editar zona de entrega" : "Adicionar nova zona de entrega"}
           </DialogTitle>
           <DialogDescription>
-            Pedido de {order.customer} • {formatDate(order.date)}
+            Configure os detalhes da zona de entrega a partir do seu endereço
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-medium mb-2">Itens do Pedido</h3>
-            <div className="space-y-2">
-              {orderItems.map((item, index) => (
-                <div key={index} className="flex justify-between">
-                  <span>
-                    {item.quantity}x {item.name}
-                  </span>
-                  <span className="font-medium">{item.price}</span>
+
+        {businessAddress ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span>
+                  Endereço base: {businessAddress.street}, {businessAddress.number} - {businessAddress.city}/{businessAddress.state}
+                </span>
+              </div>
+            </div>
+            
+            <Separator />
+            
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome da Zona</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Ex: Centro, Zona Sul, etc."
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="radius">Raio (km)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="radius"
+                      name="radius"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      placeholder="5"
+                      value={formData.radius}
+                      onChange={handleChange}
+                      required
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={calculateFeeByRadius}
+                      className="whitespace-nowrap"
+                    >
+                      Calcular Taxa
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-          
-          <Separator />
-          
-          <div className="flex justify-between font-semibold">
-            <span>Total</span>
-            <span>{order.total}</span>
-          </div>
-          
-          <Separator />
-          
-          {/* Print button section */}
-          <div>
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={handlePrintOrder}
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir 2 vias (Cliente/Entregador)
-            </Button>
-          </div>
-
-          {/* Cancel order button - only show if the order is not already cancelled */}
-          {order.status !== "cancelled" && (
-            <div>
-              <Button 
-                variant="destructive" 
-                className="w-full" 
-                onClick={handleCancelOrder}
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Cancelar Pedido
-              </Button>
-            </div>
-          )}
-
-          <Separator />
-          
-          {/* Utiliza o novo componente com visual destacado */}
-          <PaymentMethodDisplay 
-            selectedMethod={paymentMethod}
-            onMethodChange={setPaymentMethod}
-            onSave={handleSavePaymentMethod}
-          />
-
-          {order.phone && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="font-medium mb-1">Telefone</h3>
-                <p className="text-sm text-muted-foreground">{order.phone}</p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fee">Taxa de Entrega (R$)</Label>
+                  <Input
+                    id="fee"
+                    name="fee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="5.00"
+                    value={formData.fee}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
               </div>
-            </>
-          )}
-
-          {order.address && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="font-medium mb-1">Endereço de Entrega</h3>
-                <p className="text-sm text-muted-foreground">{order.address}</p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minTime">Tempo Mínimo (min)</Label>
+                  <Input
+                    id="minTime"
+                    name="minTime"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="15"
+                    value={formData.minTime}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="maxTime">Tempo Máximo (min)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="maxTime"
+                      name="maxTime"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="30"
+                      value={formData.maxTime}
+                      onChange={handleChange}
+                      required
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={calculateDeliveryTime}
+                      className="whitespace-nowrap"
+                    >
+                      Estimar Tempo
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-          
-          <Separator />
-          
-          <div>
-            <h3 className="font-medium mb-2">Contato com Cliente</h3>
-            <Textarea
-              placeholder="Digite uma mensagem para o cliente sobre o pedido..."
-              className="mb-2"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button
-                onClick={handleWhatsAppMessage}
-                className="w-full"
-                variant="default"
-                disabled={!message || !order.phone}
-              >
-                <Phone className="mr-2 h-4 w-4" />
-                Enviar WhatsApp
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={!message || !order.phone}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                SMS
-              </Button>
             </div>
+            
+            <Separator />
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {zone ? "Atualizar Zona" : "Criar Zona"}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-md bg-amber-50 p-4 text-amber-800">
+              <div className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                <h3 className="font-medium">Endereço não configurado</h3>
+              </div>
+              <p className="text-sm mt-2">
+                Configure o endereço da sua empresa para poder adicionar zonas de entrega.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" onClick={onClose}>
+                Entendi
+              </Button>
+            </DialogFooter>
           </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
 
-export default OrderModal;
+export default DeliveryZoneModal;
