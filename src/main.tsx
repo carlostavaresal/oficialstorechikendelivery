@@ -37,7 +37,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Index />,
+        element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
       },
       {
         path: "dashboard",
@@ -112,11 +112,27 @@ const router = createBrowserRouter([
         element: <Catalog />,
       },
       {
+        path: "client",
+        element: <Catalog />,
+      },
+      {
+        path: "client/catalog",
+        element: <Catalog />,
+      },
+      {
         path: "checkout",
         element: <Checkout />,
       },
       {
+        path: "client/checkout",
+        element: <Checkout />,
+      },
+      {
         path: "success",
+        element: <Success />,
+      },
+      {
+        path: "client/success",
         element: <Success />,
       },
     ],

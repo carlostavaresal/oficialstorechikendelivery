@@ -1,3 +1,4 @@
+
 // Fix for the BusinessAddress type mismatch
 // Add a proper interface for the address that matches the DeliveryZoneModal props
 
@@ -5,8 +6,6 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { MapPin, Plus, AlertCircle } from 'lucide-react';
 import DeliveryZoneModal from '@/components/delivery/DeliveryZoneModal';
@@ -20,7 +19,7 @@ export interface BusinessAddress {
   neighborhood: string;
   city: string;
   state: string;
-  postalCode: string; // This matches zipCode in the modal
+  postalCode: string; // This is used as zipCode when sending to the modal
   complement?: string;
 }
 
@@ -77,6 +76,11 @@ const DeliveryAreas: React.FC = () => {
   };
 
   const handleAddDeliveryZone = () => {
+    if (!businessAddress) {
+      setShowAddressAlert(true);
+      return;
+    }
+    
     setSelectedZone(null);
     setShowZoneModal(true);
   };
@@ -220,12 +224,20 @@ const DeliveryAreas: React.FC = () => {
         </div>
       </div>
       
-      {showZoneModal && selectedZone && (
+      {showZoneModal && (
         <DeliveryZoneModal
           isOpen={showZoneModal}
           onClose={() => setShowZoneModal(false)}
-          onSave={handleUpdateDeliveryZone} // This is the correct prop name
           zone={selectedZone}
+          businessAddress={businessAddress ? {
+            street: businessAddress.street,
+            number: businessAddress.number,
+            neighborhood: businessAddress.neighborhood,
+            city: businessAddress.city,
+            state: businessAddress.state,
+            zipCode: businessAddress.postalCode, // Correctly map postalCode to zipCode
+            complement: businessAddress.complement
+          } : null}
         />
       )}
     </DashboardLayout>
