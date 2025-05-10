@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -12,16 +13,17 @@ import {
   X,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { cn, useMobile } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   className?: string;
 }
 
-export function Sidebar() {
+export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => {
