@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import ShareMenu from "./ShareMenu";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
             Entrega Rápida
           </Link>
           <div className="flex items-center space-x-4">
+            <ShareMenu />
             <Link to="/" className="text-sm hover:underline">
               Área Administrativa
             </Link>
