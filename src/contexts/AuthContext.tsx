@@ -29,9 +29,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (username: string, password: string) => {
-    // In a real app, you would validate credentials against a backend
-    // This is a simple demo implementation
-    if (username === 'admin' && password === 'admin123') {
+    // Get custom username/password if set
+    const customUsername = localStorage.getItem('deliveryUsername');
+    const customPassword = localStorage.getItem('deliveryPassword');
+    
+    // Check if custom credentials exist and match, otherwise use default
+    const validUsername = customUsername || 'admin';
+    const validPassword = customPassword || 'admin123';
+    
+    if (username === validUsername && password === validPassword) {
       setIsAuthenticated(true);
       localStorage.setItem('isAuthenticated', 'true');
       return true;

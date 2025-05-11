@@ -20,6 +20,8 @@ import NotFound from "./pages/NotFound.tsx";
 import Catalog from "./pages/client/Catalog.tsx";
 import Checkout from "./pages/client/Checkout.tsx";
 import Success from "./pages/client/Success.tsx";
+import OnlineMenu from "./pages/menu/OnlineMenu.tsx";
+import LoginSettings from "./pages/security/LoginSettings.tsx";
 
 // Components
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
@@ -100,6 +102,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <History />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "menu",
+        element: (
+          <ProtectedRoute>
+            <OnlineMenu />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "security",
+        element: (
+          <ProtectedRoute>
+            <LoginSettings />
           </ProtectedRoute>
         ),
       },

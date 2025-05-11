@@ -1,282 +1,222 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { MapPin, Plus, Edit, Trash } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import DeliveryZoneModal from "@/components/delivery/DeliveryZoneModal";
+import AddressSetupCard from "@/components/delivery/AddressSetupCard";
 
-// Fix for the BusinessAddress type mismatch
-// Add a proper interface for the address that matches the DeliveryZoneModal props
-
-import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { MapPin, Plus, AlertCircle } from 'lucide-react';
-import DeliveryZoneModal from '@/components/delivery/DeliveryZoneModal';
-import AddressSetupCard from '@/components/delivery/AddressSetupCard';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-
-// Define the interface for the Business Address that matches the one in DeliveryZoneModal
+// Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
   street: string;
   number: string;
   neighborhood: string;
   city: string;
   state: string;
-  postalCode: string; // This is used as zipCode when sending to the modal
+  postalCode: string; // Note: This is postalCode, not zipCode
   complement?: string;
 }
 
-// Define the delivery zone type
-export interface DeliveryZone {
+interface DeliveryZone {
   id: string;
   name: string;
   radius: number;
   fee: number;
-  minTime: number;
-  maxTime: number;
-  active: boolean;
+  estimatedTime: number;
 }
 
 const DeliveryAreas: React.FC = () => {
-  const { toast } = useToast();
+  // Modify the businessAddress state to match the BusinessAddress interface
   const [businessAddress, setBusinessAddress] = useState<BusinessAddress | null>(null);
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([
-    {
-      id: "zone-1",
-      name: "Centro",
-      radius: 3,
-      fee: 5.00,
-      minTime: 15,
-      maxTime: 30,
-      active: true,
-    },
-    {
-      id: "zone-2",
-      name: "Zona Sul",
-      radius: 5,
-      fee: 7.50,
-      minTime: 20,
-      maxTime: 40,
-      active: false,
-    },
-  ]);
-  const [showZoneModal, setShowZoneModal] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
-  const [showAddressAlert, setShowAddressAlert] = useState(false);
-  
-  // Initialize default address for testing
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
+  const { toast } = useToast();
+
+  // Load zones from localStorage when component mounts
   useEffect(() => {
-    if (!businessAddress) {
-      const defaultAddress: BusinessAddress = {
-        street: "Rua das Flores",
-        number: "123",
-        neighborhood: "Centro",
-        city: "São Paulo",
-        state: "SP",
-        postalCode: "01234-567",
-        complement: "Loja 45"
-      };
-      setBusinessAddress(defaultAddress);
+    try {
+      const savedZones = localStorage.getItem("deliveryZones");
+      if (savedZones) {
+        setZones(JSON.parse(savedZones));
+      }
+    } catch (error) {
+      console.error("Error loading delivery zones:", error);
+    }
+
+    // Load business address
+    try {
+      const savedAddress = localStorage.getItem("businessAddress");
+      if (savedAddress) {
+        setBusinessAddress(JSON.parse(savedAddress));
+      }
+    } catch (error) {
+      console.error("Error loading business address:", error);
     }
   }, []);
 
+  // Save zones to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("deliveryZones", JSON.stringify(zones));
+  }, [zones]);
+
+  // Save business address to localStorage whenever it changes
+  useEffect(() => {
+    if (businessAddress) {
+      localStorage.setItem("businessAddress", JSON.stringify(businessAddress));
+    }
+  }, [businessAddress]);
+
+  // Handler for updating the business address
   const handleSetBusinessAddress = (address: BusinessAddress) => {
     setBusinessAddress(address);
-    setShowAddressAlert(false);
-    
     toast({
       title: "Endereço atualizado",
       description: "O endereço da empresa foi atualizado com sucesso.",
     });
   };
 
-  const handleAddDeliveryZone = () => {
-    if (!businessAddress) {
-      setShowAddressAlert(true);
-      return;
-    }
-    
-    setSelectedZone(null);
-    setShowZoneModal(true);
-  };
-
-  const handleEditDeliveryZone = (zone: DeliveryZone) => {
-    setSelectedZone(zone);
-    setShowZoneModal(true);
-  };
-
-  const handleSaveDeliveryZone = (zone: DeliveryZone) => {
-    if (!zone.name || !zone.radius || !zone.fee || !zone.minTime || !zone.maxTime) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (zone.radius <= 0 || zone.fee < 0 || zone.minTime < 0 || zone.maxTime < 0) {
-      toast({
-        title: "Erro",
-        description: "Os valores devem ser positivos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (zone.minTime > zone.maxTime) {
-      toast({
-        title: "Erro",
-        description: "O tempo mínimo não pode ser maior que o tempo máximo.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Generate ID for new zones
-    if (!zone.id) {
-      zone.id = `zone-${Date.now()}`;
-    }
-    
-    // Check if we're adding a new zone or updating an existing one
-    if (selectedZone) {
+  // Handle adding or updating a delivery zone
+  const handleAddZone = (zone: DeliveryZone) => {
+    if (editingZone) {
       // Update existing zone
-      setDeliveryZones(
-        deliveryZones.map((dz) => (dz.id === zone.id ? zone : dz))
-      );
+      setZones(zones.map((z) => (z.id === zone.id ? zone : z)));
       toast({
         title: "Zona atualizada",
-        description: `A zona ${zone.name} foi atualizada com sucesso.`,
+        description: `A zona de entrega "${zone.name}" foi atualizada.`,
       });
     } else {
       // Add new zone
-      setDeliveryZones([...deliveryZones, zone]);
+      setZones([...zones, { ...zone, id: crypto.randomUUID() }]);
       toast({
         title: "Zona adicionada",
-        description: `A nova zona ${zone.name} foi adicionada com sucesso.`,
+        description: `Nova zona de entrega "${zone.name}" adicionada.`,
       });
     }
-    
-    setShowZoneModal(false);
+    setEditingZone(null);
+    setIsModalOpen(false);
   };
 
-  const handleDeleteDeliveryZone = (zoneId: string) => {
-    setDeliveryZones(deliveryZones.filter((zone) => zone.id !== zoneId));
+  // Handle deleting a delivery zone
+  const handleDeleteZone = (id: string) => {
+    setZones(zones.filter((zone) => zone.id !== id));
     toast({
       title: "Zona removida",
       description: "A zona de entrega foi removida com sucesso.",
+      variant: "destructive",
     });
+  };
+
+  // Handle editing a delivery zone
+  const handleEditZone = (zone: DeliveryZone) => {
+    setEditingZone(zone);
+    setIsModalOpen(true);
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Áreas de Entrega
-          </h2>
-          <p className="text-muted-foreground">
-            Configure as áreas de entrega e taxas para cada região.
-          </p>
-        </div>
-        <Separator />
-
-        {!businessAddress && showAddressAlert && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Endereço não configurado.</AlertTitle>
-            <AlertDescription>
-              Por favor, configure o endereço da sua empresa para calcular as
-              áreas de entrega.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid gap-6">
-          <AddressSetupCard
-            address={businessAddress || {
-              street: "",
-              number: "",
-              neighborhood: "",
-              city: "",
-              state: "",
-              zipCode: "",
-              complement: ""
-            }}
-            onAddressUpdate={handleSetBusinessAddress}
-          />
-
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Zonas de Entrega</CardTitle>
-                <CardDescription>
-                  Gerencie as zonas de entrega e taxas para cada região.
-                </CardDescription>
-                <Button onClick={handleAddDeliveryZone}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Zona
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {deliveryZones.length === 0 ? (
-                <p className="text-muted-foreground">
-                  Nenhuma zona de entrega configurada.
-                </p>
-              ) : (
-                <div className="grid gap-4">
-                  {deliveryZones.map((zone) => (
-                    <Card key={zone.id} className="shadow-sm">
-                      <CardHeader>
-                        <CardTitle>{zone.name}</CardTitle>
-                        <CardDescription>
-                          Raio: {zone.radius}km | Taxa: R$ {zone.fee.toFixed(2)}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        Tempo estimado: {zone.minTime} - {zone.maxTime} minutos
-                      </CardContent>
-                      <CardFooter className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditDeliveryZone(zone)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteDeliveryZone(zone.id)}
-                        >
-                          Excluir
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
-      {showZoneModal && (
-        <DeliveryZoneModal
-          isOpen={showZoneModal}
-          onClose={() => setShowZoneModal(false)}
-          zone={selectedZone}
-          onSave={handleSaveDeliveryZone}
-          businessAddress={businessAddress ? {
+      <div className="container mx-auto p-6 space-y-8">
+        <h1 className="text-3xl font-bold mb-6">Áreas de Entrega</h1>
+        
+        {/* Business Address Setup */}
+        <AddressSetupCard
+          address={businessAddress ? {
             street: businessAddress.street,
             number: businessAddress.number,
             neighborhood: businessAddress.neighborhood,
             city: businessAddress.city,
             state: businessAddress.state,
-            zipCode: businessAddress.postalCode,
-            complement: businessAddress.complement
-          } : null}
+            zipCode: businessAddress.postalCode, // Map postalCode to zipCode for the component
+            complement: businessAddress.complement || ""
+          } : {
+            street: "",
+            number: "",
+            neighborhood: "",
+            city: "",
+            state: "",
+            zipCode: "",
+            complement: ""
+          }}
+          onAddressUpdate={handleSetBusinessAddress}
         />
-      )}
+
+        {/* Delivery Zones Section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Zonas de Entrega</CardTitle>
+            <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-1">
+              <Plus className="h-4 w-4" /> Adicionar Zona
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {!businessAddress ? (
+              <div className="rounded-md bg-amber-50 p-4 border border-amber-200">
+                <p className="text-amber-700">
+                  Configure o endereço da empresa para começar a definir zonas de entrega.
+                </p>
+              </div>
+            ) : zones.length === 0 ? (
+              <div className="text-center p-6 text-muted-foreground">
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground/60" />
+                <p>Nenhuma zona de entrega definida</p>
+                <p className="text-sm">
+                  Crie zonas de entrega para definir taxas e tempos estimados para diferentes regiões.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {zones.map((zone) => (
+                  <div
+                    key={zone.id}
+                    className="flex items-center justify-between border p-4 rounded-md"
+                  >
+                    <div>
+                      <h3 className="font-medium">{zone.name}</h3>
+                      <div className="text-sm text-muted-foreground">
+                        <p>Raio: {zone.radius} km</p>
+                        <p>Taxa: R$ {zone.fee.toFixed(2)}</p>
+                        <p>Tempo estimado: {zone.estimatedTime} min</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditZone(zone)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteZone(zone.id)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Modal for adding/editing zones */}
+        {isModalOpen && (
+          <DeliveryZoneModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingZone(null);
+            }}
+            onSave={handleAddZone}
+            initialZone={editingZone}
+          />
+        )}
+      </div>
     </DashboardLayout>
   );
 };
