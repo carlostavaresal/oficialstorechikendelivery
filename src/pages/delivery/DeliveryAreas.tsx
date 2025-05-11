@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { MapPin, Plus, Edit, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DeliveryZoneModal from "@/components/delivery/DeliveryZoneModal";
@@ -20,7 +21,8 @@ export interface BusinessAddress {
   complement?: string;
 }
 
-interface DeliveryZone {
+// Export DeliveryZone interface for use in other components
+export interface DeliveryZone {
   id: string;
   name: string;
   radius: number;

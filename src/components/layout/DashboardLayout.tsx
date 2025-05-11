@@ -22,4 +22,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   );
 };
 
+// Export both as default and named export for flexibility
 export default DashboardLayout;
+export { DashboardLayout };
