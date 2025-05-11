@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Check } from "lucide-react";
+import { BusinessAddress } from "@/pages/delivery/DeliveryAreas";
 
 interface AddressSetupCardProps {
   address: {
@@ -17,15 +18,7 @@ interface AddressSetupCardProps {
     zipCode: string;
     complement?: string;
   };
-  onAddressUpdate: (address: {
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    postalCode: string;  // Renamed to match DeliveryAreas model
-    complement?: string;
-  }) => void;
+  onAddressUpdate: (address: BusinessAddress) => void;
 }
 
 const AddressSetupCard: React.FC<AddressSetupCardProps> = ({

@@ -198,7 +198,8 @@ const DeliveryAreas: React.FC = () => {
               neighborhood: "",
               city: "",
               state: "",
-              zipCode: ""
+              zipCode: "",
+              complement: ""
             }}
             onAddressUpdate={handleSetBusinessAddress}
           />
