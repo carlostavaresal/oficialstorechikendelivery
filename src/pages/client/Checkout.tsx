@@ -1,381 +1,249 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import ClientLayout from "@/components/layout/ClientLayout";
 import { Button } from "@/components/ui/button";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import PaymentMethodSelector, { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/formatters";
-import { Product } from "@/components/products/ProductsList";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import ClientLayout from "@/components/layout/ClientLayout";
+import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
+import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
+import PromoCodeInput from "@/components/client/PromoCodeInput";
 
-const formSchema = z.object({
-  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
-  address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
-  paymentMethod: z.enum(["cash", "credit", "debit", "pix"]),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+// Adicionando o componente PromoCodeInput à página de checkout do cliente
 
 const Checkout = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<{id: string, quantity: number, notes: string}[]>([]);
-  const [itemWithNoteId, setItemWithNoteId] = useState<string | null>(null);
-  const [itemNote, setItemNote] = useState<string>("");
-  
-  const { toast } = useToast();
   const navigate = useNavigate();
-  
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      address: "",
-      paymentMethod: "cash",
-    },
-  });
+  const { toast } = useToast();
+  const [cart, setCart] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
 
   useEffect(() => {
-    // Load products
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    }
-    
-    // Load cart
-    const savedCart = localStorage.getItem('clientCart');
+    // Load cart from localStorage
+    const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     } else {
-      // If no cart, redirect back to catalog
-      navigate('/client');
+      // Redirect if cart is empty
+      navigate("/client");
     }
+  }, [navigate]);
+
+  const calculateTotal = (): number => {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const calculateDiscount = (): number => {
+    const subtotal = calculateTotal();
+    if (discountType === "percentage") {
+      return subtotal * discount;
+    }
+    return discount; // fixed amount
+  };
+
+  const calculateFinalTotal = (): number => {
+    return Math.max(0, calculateTotal() - calculateDiscount());
+  };
+
+  const handleApplyPromoCode = (discountValue: number) => {
+    // Determinar o tipo de desconto baseado no valor
+    if (discountValue >= 1) {
+      // Se for maior ou igual a 1, consideramos como um valor fixo
+      setDiscountType("fixed");
+      setDiscount(discountValue);
+    } else {
+      // Se for menor que 1, consideramos como uma porcentagem (ex: 0.15 para 15%)
+      setDiscountType("percentage");
+      setDiscount(discountValue);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Load saved user info if available
-    const savedUserInfo = localStorage.getItem('clientUserInfo');
-    if (savedUserInfo) {
-      const userInfo = JSON.parse(savedUserInfo);
-      form.reset(userInfo);
-    }
-  }, [navigate, form]);
-
-  const getProduct = (id: string) => {
-    return products.find(p => p.id === id);
-  };
-
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => {
-      const product = getProduct(item.id);
-      return total + (product ? product.price * item.quantity : 0);
-    }, 0);
-  };
-
-  const updateItemNote = (id: string, note: string) => {
-    setCart(prevCart => prevCart.map(item => 
-      item.id === id ? { ...item, notes: note } : item
-    ));
-  };
-
-  const saveNoteForItem = () => {
-    if (itemWithNoteId) {
-      updateItemNote(itemWithNoteId, itemNote);
-      setItemWithNoteId(null);
-      setItemNote("");
-      
+    if (!name || !phone || !address) {
       toast({
-        title: "Observação salva",
-        description: "Suas instruções para o item foram salvas",
-      });
-      
-      // Update localStorage
-      localStorage.setItem('clientCart', JSON.stringify(cart));
-    }
-  };
-
-  const removeCartItem = (id: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== id));
-    toast({
-      title: "Item removido",
-      description: "Item removido do carrinho",
-    });
-    
-    // Update localStorage
-    localStorage.setItem('clientCart', JSON.stringify(
-      cart.filter(item => item.id !== id)
-    ));
-  };
-
-  const onSubmit = (data: FormValues) => {
-    if (cart.length === 0) {
-      toast({
-        title: "Carrinho vazio",
-        description: "Adicione itens ao seu carrinho antes de finalizar o pedido",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
     }
-    
-    // Save user info for convenience
-    localStorage.setItem('clientUserInfo', JSON.stringify(data));
-    
-    // Create order object
+
+    // Save order
     const order = {
-      id: `order-${Date.now()}`,
-      customerName: data.name,
-      customerPhone: data.phone,
-      customerAddress: data.address,
-      paymentMethod: data.paymentMethod,
-      items: cart.map(item => {
-        const product = getProduct(item.id);
-        return {
-          product: product,
-          quantity: item.quantity,
-          notes: item.notes,
-          subtotal: product ? product.price * item.quantity : 0
-        };
-      }),
-      total: getCartTotal(),
-      status: "received",
-      createdAt: new Date().toISOString()
+      id: `#ORD-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      customer: name,
+      phone,
+      address,
+      items: cart,
+      notes,
+      total: calculateFinalTotal(),
+      subtotal: calculateTotal(),
+      discount: calculateDiscount(),
+      paymentMethod,
+      status: "pending",
+      date: new Date(),
     };
-    
+
     // Save order to localStorage
-    const savedOrders = localStorage.getItem('orders');
-    const orders = savedOrders ? JSON.parse(savedOrders) : [];
+    const savedOrders = localStorage.getItem("orders") || "[]";
+    const orders = JSON.parse(savedOrders);
     orders.push(order);
-    localStorage.setItem('orders', JSON.stringify(orders));
+    localStorage.setItem("orders", JSON.stringify(orders));
     
     // Clear cart
-    localStorage.removeItem('clientCart');
-    setCart([]);
+    localStorage.removeItem("cart");
     
+    // Notification sound
+    playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER);
+    
+    // Success toast
     toast({
-      title: "Pedido realizado com sucesso!",
-      description: "Seu pedido foi enviado e está sendo processado.",
+      title: "Pedido realizado!",
+      description: "Seu pedido foi enviado com sucesso.",
     });
     
     // Redirect to success page
-    navigate('/client/success');
+    navigate("/client/success");
   };
 
   return (
     <ClientLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link to="/client" className="inline-flex items-center text-primary">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar aos Produtos
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Finalizar Pedido</h1>
         
-        <h1 className="text-3xl font-bold mb-8">Finalizar Pedido</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Cart Summary */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ShoppingCart className="mr-2" />
-                  Seu Carrinho
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {cart.length === 0 ? (
-                  <p className="text-center py-4 text-muted-foreground">Seu carrinho está vazio</p>
-                ) : (
-                  <div className="space-y-4">
-                    {cart.map(item => {
-                      const product = getProduct(item.id);
-                      return product ? (
-                        <div key={item.id} className="flex justify-between border-b pb-4">
-                          <div className="flex-1">
-                            <h3 className="font-medium">{product.name}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <span>{item.quantity} x {formatCurrency(product.price)}</span>
-                            </div>
-                            {item.notes && (
-                              <p className="text-sm mt-1 bg-muted p-2 rounded">
-                                Obs: {item.notes}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col justify-between items-end">
-                            <span className="font-medium">
-                              {formatCurrency(product.price * item.quantity)}
-                            </span>
-                            <div className="flex space-x-1 mt-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                onClick={() => {
-                                  setItemWithNoteId(item.id);
-                                  setItemNote(item.notes || "");
-                                }}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Obs
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive" 
-                                onClick={() => removeCartItem(item.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-                
-                {/* Note editor modal */}
-                {itemWithNoteId && (
-                  <div className="mt-4 border rounded-md p-4">
-                    <h4 className="font-medium mb-2">Adicionar observação</h4>
-                    <Textarea
-                      value={itemNote}
-                      onChange={(e) => setItemNote(e.target.value)}
-                      placeholder="Ex: Sem cebola, bem passado..."
-                      className="mb-2"
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setItemWithNoteId(null);
-                          setItemNote("");
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button onClick={saveNoteForItem}>
-                        Salvar
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <div className="w-full flex justify-between items-center">
-                  <span className="text-lg font-bold">Total</span>
-                  <span className="text-lg font-bold text-primary">
-                    {formatCurrency(getCartTotal())}
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-lg font-semibold mb-4">Dados para Entrega</h2>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
                 </div>
-              </CardFooter>
-            </Card>
+                
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Telefone *
+                  </label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(99) 99999-9999"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                    Endereço Completo *
+                  </label>
+                  <Textarea
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Rua, número, complemento, bairro, cidade"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                    Observações
+                  </label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Ex: Sem cebola, troco para R$ 50,00, etc."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Forma de Pagamento
+                  </label>
+                  <PaymentMethodSelector
+                    selected={paymentMethod}
+                    onSelect={setPaymentMethod}
+                  />
+                </div>
+                
+                <div>
+                  <PromoCodeInput onApply={handleApplyPromoCode} />
+                </div>
+                
+                <Button type="submit" className="w-full">
+                  Finalizar Pedido
+                </Button>
+              </form>
+            </div>
           </div>
           
-          {/* Customer Information Form */}
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Seus Dados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome completo</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Seu nome completo" 
-                              {...field} 
-                              autoComplete="name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="(00) 00000-0000" 
-                              {...field} 
-                              autoComplete="tel"
-                              type="tel"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Endereço completo</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Rua, número, bairro, complemento..." 
-                              {...field} 
-                              autoComplete="street-address"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="paymentMethod"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Forma de Pagamento</FormLabel>
-                          <FormControl>
-                            <div className="mt-1">
-                              <PaymentMethodSelector
-                                value={field.value}
-                                onChange={field.onChange}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full">
-                      Finalizar Pedido
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+            <div className="bg-white p-6 rounded-lg shadow sticky top-4">
+              <h2 className="text-lg font-semibold mb-4">Resumo do Pedido</h2>
+              
+              {cart.length === 0 ? (
+                <p>Seu carrinho está vazio</p>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item, index) => (
+                    <div key={index} className="flex justify-between">
+                      <span>
+                        {item.quantity}x {item.name}
+                      </span>
+                      <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>R$ {calculateTotal().toFixed(2)}</span>
+                  </div>
+                  
+                  {discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Desconto</span>
+                      <span>- R$ {calculateDiscount().toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between font-bold">
+                    <span>Total</span>
+                    <span>R$ {calculateFinalTotal().toFixed(2)}</span>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="text-sm text-muted-foreground">
+                    <p>* Campos obrigatórios</p>
+                    <p className="mt-2">Após finalizar o pedido, entraremos em contato para confirmar os detalhes.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
