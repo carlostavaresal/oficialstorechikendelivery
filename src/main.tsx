@@ -22,6 +22,7 @@ import Checkout from "./pages/client/Checkout.tsx";
 import Success from "./pages/client/Success.tsx";
 import OnlineMenu from "./pages/menu/OnlineMenu.tsx";
 import LoginSettings from "./pages/security/LoginSettings.tsx";
+import PromotionalCodes from "./pages/promotions/PromotionalCodes.tsx";
 
 // Components
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
@@ -94,6 +95,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PaymentMethods />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "promotions",
+        element: (
+          <ProtectedRoute>
+            <PromotionalCodes />
           </ProtectedRoute>
         ),
       },

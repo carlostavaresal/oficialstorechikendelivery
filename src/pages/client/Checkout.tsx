@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -183,8 +182,8 @@ const Checkout = () => {
                     Forma de Pagamento
                   </label>
                   <PaymentMethodSelector
-                    selected={paymentMethod}
-                    onSelect={setPaymentMethod}
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
                   />
                 </div>
                 
