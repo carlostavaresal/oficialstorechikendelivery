@@ -6,6 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/formatters";
+import { QrCode, Link as LinkIcon, Copy, Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 interface MenuItem {
   id: string;
@@ -24,9 +40,22 @@ interface Category {
 
 const OnlineMenu: React.FC = () => {
   const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
   const [items, setItems] = useState<MenuItem[]>(() => {
-    const savedItems = localStorage.getItem("menuItems");
-    return savedItems ? JSON.parse(savedItems) : [];
+    const savedItems = localStorage.getItem("products");
+    if (savedItems) {
+      const products = JSON.parse(savedItems);
+      return products.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: product.category || "Geral",
+        isAvailable: true,
+        imageUrl: product.image
+      }));
+    }
+    return [];
   });
 
   const [categories, setCategories] = useState<Category[]>(() => {
@@ -35,6 +64,28 @@ const OnlineMenu: React.FC = () => {
       ? JSON.parse(savedCategories) 
       : [{ id: "1", name: "Geral" }];
   });
+
+  // Update items when products change
+  React.useEffect(() => {
+    const handleProductsUpdate = () => {
+      const savedItems = localStorage.getItem("products");
+      if (savedItems) {
+        const products = JSON.parse(savedItems);
+        setItems(products.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          category: product.category || "Geral",
+          isAvailable: true,
+          imageUrl: product.image
+        })));
+      }
+    };
+
+    window.addEventListener("productsUpdated", handleProductsUpdate);
+    return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
+  }, []);
 
   // Save to localStorage whenever items change
   React.useEffect(() => {
@@ -70,14 +121,45 @@ const OnlineMenu: React.FC = () => {
     }
   };
 
+  const handleCopyLink = () => {
+    const menuUrl = `${window.location.origin}/client`;
+    navigator.clipboard.writeText(menuUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    
+    toast({
+      title: "Link copiado",
+      description: "Link do cardápio copiado para a área de transferência",
+    });
+  };
+
+  const handleDownloadQR = () => {
+    const menuUrl = `${window.location.origin}/client`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
+    
+    const link = document.createElement('a');
+    link.href = qrCodeUrl;
+    link.download = 'cardapio-qrcode.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "QR Code baixado",
+      description: "QR Code do cardápio foi baixado com sucesso",
+    });
+  };
+
   const itemsByCategory = categories.map((category) => {
     return {
       category,
-      items: items.filter((item) => item.category === category.id),
+      items: items.filter((item) => item.category === category.id || item.category === category.name),
     };
   });
 
   const availableItems = items.filter(item => item.isAvailable);
+  const menuUrl = `${window.location.origin}/client`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
 
   return (
     <DashboardLayout>
@@ -86,27 +168,88 @@ const OnlineMenu: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">Cardápio Online</h1>
             <p className="text-muted-foreground">
-              Gerencie os produtos que aparecem para os clientes no seu cardápio online
+              Visualize todos os produtos adicionados e compartilhe o cardápio com seus clientes
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-primary">{availableItems.length}</p>
-            <p className="text-sm text-muted-foreground">Itens disponíveis</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">{availableItems.length}</p>
+              <p className="text-sm text-muted-foreground">Itens disponíveis</p>
+            </div>
+            
+            {/* Compartilhar Cardápio */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  Compartilhar Cardápio
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Compartilhar Cardápio Online</DialogTitle>
+                  <DialogDescription>
+                    Compartilhe o cardápio online para que seus clientes possam fazer pedidos.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <Tabs defaultValue="qrcode" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="qrcode">QR Code</TabsTrigger>
+                    <TabsTrigger value="link">Link</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="qrcode" className="py-4">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <div className="border border-border p-3 rounded-md bg-white">
+                        <img src={qrCodeUrl} alt="QR Code do cardápio" className="w-52 h-52" />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Escaneie este QR code para acessar o cardápio online
+                      </p>
+                      <Button onClick={handleDownloadQR} variant="outline" className="w-full">
+                        Baixar QR Code
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="link" className="py-4">
+                    <div className="flex flex-col gap-4">
+                      <p className="text-sm text-muted-foreground">
+                        Copie este link e compartilhe com seus clientes
+                      </p>
+                      <div className="flex gap-2">
+                        <Input value={menuUrl} readOnly className="flex-1" />
+                        <Button onClick={handleCopyLink} variant="secondary" className="flex-shrink-0">
+                          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                
+                <div className="mt-4">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Os clientes podem fazer pedidos diretamente pelo cardápio online
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        {/* Menu Display */}
+        {/* Visualização dos Produtos */}
         <Card>
           <CardHeader>
-            <CardTitle>Cardápio para Clientes</CardTitle>
+            <CardTitle>Produtos do Cardápio</CardTitle>
             <CardDescription>
-              Todos os produtos cadastrados. Use os controles para gerenciar disponibilidade.
+              Todos os produtos adicionados e suas configurações. Gerencie a disponibilidade para os clientes.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {itemsByCategory.length === 0 || items.length === 0 ? (
+            {items.length === 0 ? (
               <div className="text-center p-12 text-muted-foreground">
-                <p className="text-xl mb-2">Seu cardápio está vazio</p>
+                <p className="text-xl mb-2">Nenhum produto cadastrado</p>
                 <p className="text-sm">
                   Vá para a página "Produtos" para adicionar itens ao seu cardápio.
                 </p>
@@ -123,60 +266,58 @@ const OnlineMenu: React.FC = () => {
                         Nenhum item nesta categoria
                       </p>
                     ) : (
-                      <div className="grid gap-4">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {items.map((item) => (
-                          <div
+                          <Card
                             key={item.id}
-                            className={`flex justify-between items-center p-4 border rounded-lg transition-all ${
+                            className={`overflow-hidden transition-all ${
                               !item.isAvailable ? "opacity-50 bg-muted" : "bg-background"
                             }`}
                           >
-                            <div className="flex items-center gap-4 flex-1">
-                              {item.imageUrl && (
-                                <img
-                                  src={item.imageUrl}
-                                  alt={item.name}
-                                  className="w-16 h-16 object-cover rounded"
-                                />
+                            <div className="relative pt-[60%]">
+                              <img
+                                src={item.imageUrl || "/placeholder.svg"}
+                                alt={item.name}
+                                className="absolute inset-0 h-full w-full object-cover"
+                              />
+                              {!item.isAvailable && (
+                                <div className="absolute top-2 right-2">
+                                  <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
+                                    Indisponível
+                                  </span>
+                                </div>
                               )}
-                              <div className="flex-1">
-                                <div className="font-medium flex items-center gap-2">
-                                  {item.name}
-                                  {!item.isAvailable && (
-                                    <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
-                                      Indisponível
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {item.description}
-                                </div>
-                                <div className="font-medium text-primary mt-1">
-                                  {formatCurrency(item.price)}
-                                </div>
-                              </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                <label htmlFor={`toggle-${item.id}`} className="text-sm font-medium">
-                                  {item.isAvailable ? 'Disponível' : 'Indisponível'}
-                                </label>
-                                <Switch
-                                  id={`toggle-${item.id}`}
-                                  checked={item.isAvailable}
-                                  onCheckedChange={() => handleToggleItemAvailability(item.id)}
-                                />
+                            <CardContent className="p-4">
+                              <h4 className="font-medium text-lg mb-2">{item.name}</h4>
+                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                {item.description}
+                              </p>
+                              <p className="text-xl font-bold text-primary mb-4">
+                                {formatCurrency(item.price)}
+                              </p>
+                              
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">
+                                    {item.isAvailable ? 'Disponível' : 'Indisponível'}
+                                  </span>
+                                  <Switch
+                                    checked={item.isAvailable}
+                                    onCheckedChange={() => handleToggleItemAvailability(item.id)}
+                                  />
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveItem(item.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Excluir
+                                </Button>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveItem(item.id)}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                Excluir
-                              </Button>
-                            </div>
-                          </div>
+                            </CardContent>
+                          </Card>
                         ))}
                       </div>
                     )}
