@@ -45,15 +45,25 @@ const OnlineMenu: React.FC = () => {
     const savedProducts = localStorage.getItem("products");
     if (savedProducts) {
       const products = JSON.parse(savedProducts);
-      return products.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category || "Geral",
-        isAvailable: true,
-        imageUrl: product.image
-      }));
+      return products.map((product: any) => {
+        // Extrair a imagem corretamente do formato de objeto ou string
+        let imageUrl = product.image;
+        if (product.image && typeof product.image === 'object' && product.image.value) {
+          imageUrl = product.image.value;
+        } else if (product.image && typeof product.image === 'object' && product.image._type === 'String') {
+          imageUrl = product.image.value;
+        }
+        
+        return {
+          id: product.id,
+          name: product.name || '',
+          description: product.description || '',
+          price: Number(product.price) || 0,
+          category: product.category || "Geral",
+          isAvailable: true,
+          imageUrl: imageUrl
+        };
+      });
     }
     return [];
   });
@@ -71,15 +81,25 @@ const OnlineMenu: React.FC = () => {
       const savedProducts = localStorage.getItem("products");
       if (savedProducts) {
         const products = JSON.parse(savedProducts);
-        const updatedItems = products.map((product: any) => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          category: product.category || "Geral",
-          isAvailable: true,
-          imageUrl: product.image
-        }));
+        const updatedItems = products.map((product: any) => {
+          // Extrair a imagem corretamente do formato de objeto ou string
+          let imageUrl = product.image;
+          if (product.image && typeof product.image === 'object' && product.image.value) {
+            imageUrl = product.image.value;
+          } else if (product.image && typeof product.image === 'object' && product.image._type === 'String') {
+            imageUrl = product.image.value;
+          }
+          
+          return {
+            id: product.id,
+            name: product.name || '',
+            description: product.description || '',
+            price: Number(product.price) || 0,
+            category: product.category || "Geral",
+            isAvailable: true,
+            imageUrl: imageUrl
+          };
+        });
         setItems(updatedItems);
         console.log('Items atualizados:', updatedItems);
       }
@@ -125,6 +145,7 @@ const OnlineMenu: React.FC = () => {
   };
 
   const handleCopyLink = () => {
+    // Corrigir a URL para o cardápio online (catálogo de clientes)
     const menuUrl = `${window.location.origin}/client`;
     navigator.clipboard.writeText(menuUrl);
     setCopied(true);
@@ -137,6 +158,7 @@ const OnlineMenu: React.FC = () => {
   };
 
   const handleDownloadQR = () => {
+    // Corrigir a URL para o cardápio online (catálogo de clientes)
     const menuUrl = `${window.location.origin}/client`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
     
@@ -161,6 +183,7 @@ const OnlineMenu: React.FC = () => {
   });
 
   const availableItems = items.filter(item => item.isAvailable);
+  // Corrigir a URL para o cardápio online (catálogo de clientes)
   const menuUrl = `${window.location.origin}/client`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
 
