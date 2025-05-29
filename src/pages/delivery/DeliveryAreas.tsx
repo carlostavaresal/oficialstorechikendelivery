@@ -5,10 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MapPin, Plus, Edit, Trash } from "lucide-react";
+import { MapPin, Plus, Edit, Trash, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DeliveryZoneModal from "@/components/delivery/DeliveryZoneModal";
 import AddressSetupCard from "@/components/delivery/AddressSetupCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
@@ -17,7 +28,7 @@ export interface BusinessAddress {
   neighborhood: string;
   city: string;
   state: string;
-  postalCode: string; // Note: This is postalCode, not zipCode
+  postalCode: string;
   complement?: string;
 }
 
@@ -31,11 +42,12 @@ export interface DeliveryZone {
 }
 
 const DeliveryAreas: React.FC = () => {
-  // Modify the businessAddress state to match the BusinessAddress interface
   const [businessAddress, setBusinessAddress] = useState<BusinessAddress | null>(null);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
+  const [defaultRadius, setDefaultRadius] = useState<string>("5");
+  const [defaultFee, setDefaultFee] = useState<string>("5.00");
   const { toast } = useToast();
 
   // Load zones from localStorage when component mounts
@@ -58,6 +70,18 @@ const DeliveryAreas: React.FC = () => {
     } catch (error) {
       console.error("Error loading business address:", error);
     }
+
+    // Load default delivery settings
+    try {
+      const savedDefaults = localStorage.getItem("deliveryDefaults");
+      if (savedDefaults) {
+        const defaults = JSON.parse(savedDefaults);
+        setDefaultRadius(defaults.radius || "5");
+        setDefaultFee(defaults.fee || "5.00");
+      }
+    } catch (error) {
+      console.error("Error loading delivery defaults:", error);
+    }
   }, []);
 
   // Save zones to localStorage whenever they change
@@ -71,6 +95,19 @@ const DeliveryAreas: React.FC = () => {
       localStorage.setItem("businessAddress", JSON.stringify(businessAddress));
     }
   }, [businessAddress]);
+
+  // Save default settings
+  const handleSaveDefaults = () => {
+    const defaults = {
+      radius: defaultRadius,
+      fee: defaultFee,
+    };
+    localStorage.setItem("deliveryDefaults", JSON.stringify(defaults));
+    toast({
+      title: "Configurações salvas",
+      description: "As configurações padrão de entrega foram salvas com sucesso.",
+    });
+  };
 
   // Handler for updating the business address
   const handleSetBusinessAddress = (address: BusinessAddress) => {
@@ -102,12 +139,12 @@ const DeliveryAreas: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // Handle deleting a delivery zone
-  const handleDeleteZone = (id: string) => {
+  // Handle deleting a delivery zone with confirmation
+  const handleDeleteZone = (id: string, zoneName: string) => {
     setZones(zones.filter((zone) => zone.id !== id));
     toast({
       title: "Zona removida",
-      description: "A zona de entrega foi removida com sucesso.",
+      description: `A zona de entrega "${zoneName}" foi removida com sucesso.`,
       variant: "destructive",
     });
   };
@@ -131,7 +168,7 @@ const DeliveryAreas: React.FC = () => {
             neighborhood: businessAddress.neighborhood,
             city: businessAddress.city,
             state: businessAddress.state,
-            zipCode: businessAddress.postalCode, // Map postalCode to zipCode for the component
+            zipCode: businessAddress.postalCode,
             complement: businessAddress.complement || ""
           } : {
             street: "",
@@ -144,6 +181,49 @@ const DeliveryAreas: React.FC = () => {
           }}
           onAddressUpdate={handleSetBusinessAddress}
         />
+
+        {/* Default Delivery Settings */}
+        {businessAddress && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Padrão de Entrega</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="defaultRadius">Raio Padrão de Entrega (km)</Label>
+                  <Input
+                    id="defaultRadius"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={defaultRadius}
+                    onChange={(e) => setDefaultRadius(e.target.value)}
+                    placeholder="Ex: 5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="defaultFee">Taxa Padrão de Entrega (R$)</Label>
+                  <Input
+                    id="defaultFee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={defaultFee}
+                    onChange={(e) => setDefaultFee(e.target.value)}
+                    placeholder="Ex: 5.00"
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <Button onClick={handleSaveDefaults} className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Salvar Configurações
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Delivery Zones Section */}
         <Card>
@@ -191,13 +271,35 @@ const DeliveryAreas: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteZone(zone.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir a zona de entrega "{zone.name}"?
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteZone(zone.id, zone.name)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 ))}
@@ -216,6 +318,8 @@ const DeliveryAreas: React.FC = () => {
             }}
             onSave={handleAddZone}
             initialZone={editingZone}
+            defaultRadius={parseFloat(defaultRadius)}
+            defaultFee={parseFloat(defaultFee)}
           />
         )}
       </div>

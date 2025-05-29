@@ -5,10 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Plus, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -48,7 +47,6 @@ const OnlineMenu: React.FC = () => {
   });
 
   const [newCategory, setNewCategory] = useState("");
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
 
   // Save to localStorage whenever items or categories change
   React.useEffect(() => {
@@ -113,30 +111,25 @@ const OnlineMenu: React.FC = () => {
     });
   };
 
-  const handleEditItem = (item: MenuItem) => {
-    setEditingItem(item);
-  };
-
-  const handleSaveEditedItem = () => {
-    if (!editingItem) return;
-
-    setItems(
-      items.map((item) => (item.id === editingItem.id ? editingItem : item))
-    );
-    setEditingItem(null);
-    
-    toast({
-      title: "Item atualizado",
-      description: `O item "${editingItem.name}" foi atualizado com sucesso.`,
-    });
-  };
-
   const handleToggleItemAvailability = (id: string) => {
     setItems(
       items.map((item) =>
         item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
       )
     );
+  };
+
+  const handleRemoveItem = (id: string) => {
+    const item = items.find(i => i.id === id);
+    setItems(items.filter(item => item.id !== id));
+    
+    if (item) {
+      toast({
+        title: "Item removido",
+        description: `O item "${item.name}" foi removido do cardápio.`,
+        variant: "destructive",
+      });
+    }
   };
 
   const itemsByCategory = categories.map((category) => {
@@ -151,303 +144,201 @@ const OnlineMenu: React.FC = () => {
       <div className="container mx-auto p-6 space-y-8">
         <h1 className="text-3xl font-bold mb-6">Cardápio Online</h1>
 
-        <Tabs defaultValue="menu" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="menu">Visualizar Cardápio</TabsTrigger>
-            <TabsTrigger value="edit">Gerenciar Itens</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="menu" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cardápio Digital</CardTitle>
-                <CardDescription>
-                  Visualize como seu cardápio aparece para os clientes.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {itemsByCategory.length === 0 ? (
-                  <div className="text-center p-6 text-muted-foreground">
-                    <p>Seu cardápio está vazio</p>
-                    <p className="text-sm">
-                      Adicione categorias e itens para começar.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {itemsByCategory.map(({ category, items }) => (
-                      <div key={category.id}>
-                        <h3 className="text-lg font-semibold border-b pb-2 mb-4">
-                          {category.name}
-                        </h3>
-                        {items.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            Nenhum item nesta categoria
-                          </p>
-                        ) : (
-                          <div className="grid gap-4">
-                            {items
-                              .filter(item => item.isAvailable)
-                              .map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex justify-between items-center p-3 border rounded-md"
-                                >
-                                  <div>
-                                    <div className="font-medium">{item.name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {item.description}
-                                    </div>
-                                  </div>
-                                  <div className="font-medium">
-                                    R$ {item.price.toFixed(2)}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="edit" className="mt-6 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Categorias</CardTitle>
-                <CardDescription>Adicione ou edite categorias do seu cardápio</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Nome da nova categoria"
-                  />
-                  <Button onClick={handleAddCategory} className="shrink-0">
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="p-2 border rounded-md flex justify-between items-center"
-                    >
-                      <span>{category.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Adicionar Item ao Cardápio</CardTitle>
-                <CardDescription>Preencha os detalhes do novo item</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome do Item</Label>
-                      <Input
-                        id="name"
-                        value={newItem.name}
-                        onChange={(e) =>
-                          setNewItem({ ...newItem, name: e.target.value })
-                        }
-                        placeholder="Ex: X-Burger"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Preço (R$)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={newItem.price}
-                        onChange={(e) =>
-                          setNewItem({
-                            ...newItem,
-                            price: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="Ex: 15.90"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Input
-                      id="description"
-                      value={newItem.description}
-                      onChange={(e) =>
-                        setNewItem({ ...newItem, description: e.target.value })
-                      }
-                      placeholder="Ex: Hambúrguer com queijo, alface e tomate"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoria</Label>
-                    <select
-                      id="category"
-                      value={newItem.category}
-                      onChange={(e) =>
-                        setNewItem({ ...newItem, category: e.target.value })
-                      }
-                      className="w-full p-2 border rounded-md bg-background"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Switch
-                      id="available"
-                      checked={newItem.isAvailable}
-                      onCheckedChange={(checked) =>
-                        setNewItem({ ...newItem, isAvailable: checked })
-                      }
-                    />
-                    <Label htmlFor="available">Disponível para venda</Label>
-                  </div>
-                  <Button onClick={handleAddItem} className="w-full">
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar Item
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Itens</CardTitle>
-                <CardDescription>Edite ou remova itens do cardápio</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {items.length === 0 ? (
-                  <div className="text-center p-6 text-muted-foreground">
-                    <p>Nenhum item no cardápio</p>
-                    <p className="text-sm">Adicione itens para começar.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3 border rounded-md"
-                      >
-                        {editingItem?.id === item.id ? (
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                              <Input
-                                value={editingItem.name}
-                                onChange={(e) =>
-                                  setEditingItem({
-                                    ...editingItem,
-                                    name: e.target.value,
-                                  })
-                                }
-                              />
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={editingItem.price}
-                                onChange={(e) =>
-                                  setEditingItem({
-                                    ...editingItem,
-                                    price: parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                              />
-                            </div>
-                            <Input
-                              value={editingItem.description}
-                              onChange={(e) =>
-                                setEditingItem({
-                                  ...editingItem,
-                                  description: e.target.value,
-                                })
-                              }
-                            />
-                            <select
-                              value={editingItem.category}
-                              onChange={(e) =>
-                                setEditingItem({
-                                  ...editingItem,
-                                  category: e.target.value,
-                                })
-                              }
-                              className="w-full p-2 border rounded-md"
-                            >
-                              {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setEditingItem(null)}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button onClick={handleSaveEditedItem}>
-                                <Save className="h-4 w-4 mr-1" /> Salvar
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between">
-                            <div>
-                              <div className="font-medium">{item.name}</div>
+        {/* Menu Display */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Visualização do Cardápio</CardTitle>
+            <CardDescription>
+              Como seu cardápio aparece para os clientes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {itemsByCategory.length === 0 ? (
+              <div className="text-center p-6 text-muted-foreground">
+                <p>Seu cardápio está vazio</p>
+                <p className="text-sm">
+                  Adicione categorias e itens para começar.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {itemsByCategory.map(({ category, items }) => (
+                  <div key={category.id}>
+                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+                      {category.name}
+                    </h3>
+                    {items.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum item nesta categoria
+                      </p>
+                    ) : (
+                      <div className="grid gap-4">
+                        {items.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`flex justify-between items-center p-3 border rounded-md ${
+                              !item.isAvailable ? "opacity-50 bg-muted" : ""
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium flex items-center gap-2">
+                                {item.name}
+                                {!item.isAvailable && (
+                                  <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
+                                    Indisponível
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">
                                 {item.description}
                               </div>
-                              <div className="text-sm">
-                                R$ {item.price.toFixed(2)} |{" "}
-                                {categories.find((c) => c.id === item.category)?.name}
-                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center space-x-2">
+                            <div className="flex items-center gap-4">
+                              <div className="font-medium">
+                                R$ {item.price.toFixed(2)}
+                              </div>
+                              <div className="flex items-center gap-2">
                                 <Switch
                                   checked={item.isAvailable}
-                                  onCheckedChange={() =>
-                                    handleToggleItemAvailability(item.id)
-                                  }
+                                  onCheckedChange={() => handleToggleItemAvailability(item.id)}
+                                  size="sm"
                                 />
-                                <span className="text-sm">
-                                  {item.isAvailable ? "Disponível" : "Indisponível"}
-                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveItem(item.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Remover
+                                </Button>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditItem(item)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
                             </div>
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add Category */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar Categoria</CardTitle>
+            <CardDescription>Organize seu cardápio em categorias</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 mb-4">
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Nome da nova categoria"
+              />
+              <Button onClick={handleAddCategory} className="shrink-0">
+                <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Categorias existentes:</Label>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="px-3 py-1 bg-secondary rounded-md text-sm"
+                  >
+                    {category.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Item */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar Item ao Cardápio</CardTitle>
+            <CardDescription>Adicione novos produtos ao seu cardápio</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome do Item</Label>
+                  <Input
+                    id="name"
+                    value={newItem.name}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, name: e.target.value })
+                    }
+                    placeholder="Ex: X-Burger"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Preço (R$)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newItem.price}
+                    onChange={(e) =>
+                      setNewItem({
+                        ...newItem,
+                        price: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    placeholder="Ex: 15.90"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Input
+                  id="description"
+                  value={newItem.description}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, description: e.target.value })
+                  }
+                  placeholder="Ex: Hambúrguer com queijo, alface e tomate"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria</Label>
+                <select
+                  id="category"
+                  value={newItem.category}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, category: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-md bg-background"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch
+                  id="available"
+                  checked={newItem.isAvailable}
+                  onCheckedChange={(checked) =>
+                    setNewItem({ ...newItem, isAvailable: checked })
+                  }
+                />
+                <Label htmlFor="available">Disponível para venda</Label>
+              </div>
+              <Button onClick={handleAddItem} className="w-full">
+                <Plus className="h-4 w-4 mr-1" /> Adicionar Item
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

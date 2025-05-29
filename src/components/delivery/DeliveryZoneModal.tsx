@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -16,6 +17,8 @@ export interface DeliveryZoneModalProps {
   onClose: () => void;
   onSave: (zone: DeliveryZone) => void;
   initialZone: DeliveryZone | null;
+  defaultRadius?: number;
+  defaultFee?: number;
 }
 
 const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
@@ -23,12 +26,18 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
   onClose,
   onSave,
   initialZone,
+  defaultRadius = 5,
+  defaultFee = 5.00,
 }) => {
   const [name, setName] = useState(initialZone?.name || "");
-  const [radius, setRadius] = useState(initialZone?.radius?.toString() || "");
-  const [fee, setFee] = useState(initialZone?.fee?.toString() || "");
+  const [radius, setRadius] = useState(
+    initialZone?.radius?.toString() || defaultRadius.toString()
+  );
+  const [fee, setFee] = useState(
+    initialZone?.fee?.toString() || defaultFee.toString()
+  );
   const [estimatedTime, setEstimatedTime] = useState(
-    initialZone?.estimatedTime?.toString() || ""
+    initialZone?.estimatedTime?.toString() || "30"
   );
 
   const handleSave = () => {
@@ -74,6 +83,7 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
+              placeholder="Ex: Centro"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -83,6 +93,8 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
             <Input
               id="radius"
               type="number"
+              min="0"
+              step="0.1"
               value={radius}
               onChange={(e) => setRadius(e.target.value)}
               className="col-span-3"
@@ -95,6 +107,8 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
             <Input
               id="fee"
               type="number"
+              min="0"
+              step="0.01"
               value={fee}
               onChange={(e) => setFee(e.target.value)}
               className="col-span-3"
@@ -107,6 +121,7 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
             <Input
               id="estimatedTime"
               type="number"
+              min="1"
               value={estimatedTime}
               onChange={(e) => setEstimatedTime(e.target.value)}
               className="col-span-3"
