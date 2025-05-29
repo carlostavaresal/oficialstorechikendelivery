@@ -43,16 +43,33 @@ const OnlineMenu: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [items, setItems] = useState<MenuItem[]>(() => {
     const savedProducts = localStorage.getItem("products");
+    console.log('Produtos salvos no localStorage:', savedProducts);
     if (savedProducts) {
       const products = JSON.parse(savedProducts);
+      console.log('Produtos parseados:', products);
       return products.map((product: any) => {
-        // Extrair a imagem corretamente do formato de objeto ou string
-        let imageUrl = product.image;
-        if (product.image && typeof product.image === 'object' && product.image.value) {
-          imageUrl = product.image.value;
-        } else if (product.image && typeof product.image === 'object' && product.image._type === 'String') {
-          imageUrl = product.image.value;
+        // Processar a imagem corretamente
+        let imageUrl = '';
+        
+        if (product.image) {
+          if (typeof product.image === 'string') {
+            imageUrl = product.image;
+          } else if (typeof product.image === 'object') {
+            if (product.image.value) {
+              imageUrl = product.image.value;
+            } else if (product.image._type === 'String' && product.image.value) {
+              imageUrl = product.image.value;
+            }
+          }
         }
+        
+        console.log('Produto processado:', {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          description: product.description,
+          imageUrl: imageUrl
+        });
         
         return {
           id: product.id,
@@ -79,15 +96,23 @@ const OnlineMenu: React.FC = () => {
   React.useEffect(() => {
     const handleProductsUpdate = () => {
       const savedProducts = localStorage.getItem("products");
+      console.log('Atualizando produtos:', savedProducts);
       if (savedProducts) {
         const products = JSON.parse(savedProducts);
         const updatedItems = products.map((product: any) => {
-          // Extrair a imagem corretamente do formato de objeto ou string
-          let imageUrl = product.image;
-          if (product.image && typeof product.image === 'object' && product.image.value) {
-            imageUrl = product.image.value;
-          } else if (product.image && typeof product.image === 'object' && product.image._type === 'String') {
-            imageUrl = product.image.value;
+          // Processar a imagem corretamente
+          let imageUrl = '';
+          
+          if (product.image) {
+            if (typeof product.image === 'string') {
+              imageUrl = product.image;
+            } else if (typeof product.image === 'object') {
+              if (product.image.value) {
+                imageUrl = product.image.value;
+              } else if (product.image._type === 'String' && product.image.value) {
+                imageUrl = product.image.value;
+              }
+            }
           }
           
           return {
@@ -145,7 +170,6 @@ const OnlineMenu: React.FC = () => {
   };
 
   const handleCopyLink = () => {
-    // Corrigir a URL para o cardápio online (catálogo de clientes)
     const menuUrl = `${window.location.origin}/client`;
     navigator.clipboard.writeText(menuUrl);
     setCopied(true);
@@ -158,7 +182,6 @@ const OnlineMenu: React.FC = () => {
   };
 
   const handleDownloadQR = () => {
-    // Corrigir a URL para o cardápio online (catálogo de clientes)
     const menuUrl = `${window.location.origin}/client`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
     
@@ -183,7 +206,6 @@ const OnlineMenu: React.FC = () => {
   });
 
   const availableItems = items.filter(item => item.isAvailable);
-  // Corrigir a URL para o cardápio online (catálogo de clientes)
   const menuUrl = `${window.location.origin}/client`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
 
@@ -203,7 +225,6 @@ const OnlineMenu: React.FC = () => {
               <p className="text-sm text-muted-foreground">Itens disponíveis</p>
             </div>
             
-            {/* Compartilhar Cardápio */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="secondary" className="flex items-center gap-2">
@@ -264,7 +285,6 @@ const OnlineMenu: React.FC = () => {
           </div>
         </div>
 
-        {/* Visualização dos Produtos */}
         <Card>
           <CardHeader>
             <CardTitle>Produtos do Cardápio</CardTitle>
