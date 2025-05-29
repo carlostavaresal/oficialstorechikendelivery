@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/formatters";
 
 interface MenuItem {
   id: string;
@@ -46,6 +47,14 @@ const OnlineMenu: React.FC = () => {
         item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
       )
     );
+    
+    const item = items.find(i => i.id === id);
+    if (item) {
+      toast({
+        title: item.isAvailable ? "Item desabilitado" : "Item habilitado",
+        description: `${item.name} foi ${item.isAvailable ? 'removido' : 'adicionado'} ao cardápio online.`,
+      });
+    }
   };
 
   const handleRemoveItem = (id: string) => {
@@ -68,25 +77,38 @@ const OnlineMenu: React.FC = () => {
     };
   });
 
+  const availableItems = items.filter(item => item.isAvailable);
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 space-y-8">
-        <h1 className="text-3xl font-bold mb-6">Cardápio Online</h1>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Cardápio Online</h1>
+            <p className="text-muted-foreground">
+              Gerencie os produtos que aparecem para os clientes no seu cardápio online
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-primary">{availableItems.length}</p>
+            <p className="text-sm text-muted-foreground">Itens disponíveis</p>
+          </div>
+        </div>
 
         {/* Menu Display */}
         <Card>
           <CardHeader>
-            <CardTitle>Visualização do Cardápio</CardTitle>
+            <CardTitle>Cardápio para Clientes</CardTitle>
             <CardDescription>
-              Como seu cardápio aparece para os clientes
+              Todos os produtos cadastrados. Use os controles para gerenciar disponibilidade.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {itemsByCategory.length === 0 ? (
-              <div className="text-center p-6 text-muted-foreground">
-                <p>Seu cardápio está vazio</p>
+            {itemsByCategory.length === 0 || items.length === 0 ? (
+              <div className="text-center p-12 text-muted-foreground">
+                <p className="text-xl mb-2">Seu cardápio está vazio</p>
                 <p className="text-sm">
-                  Adicione itens para começar.
+                  Vá para a página "Produtos" para adicionar itens ao seu cardápio.
                 </p>
               </div>
             ) : (
@@ -105,41 +127,54 @@ const OnlineMenu: React.FC = () => {
                         {items.map((item) => (
                           <div
                             key={item.id}
-                            className={`flex justify-between items-center p-3 border rounded-md ${
-                              !item.isAvailable ? "opacity-50 bg-muted" : ""
+                            className={`flex justify-between items-center p-4 border rounded-lg transition-all ${
+                              !item.isAvailable ? "opacity-50 bg-muted" : "bg-background"
                             }`}
                           >
-                            <div className="flex-1">
-                              <div className="font-medium flex items-center gap-2">
-                                {item.name}
-                                {!item.isAvailable && (
-                                  <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
-                                    Indisponível
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {item.description}
+                            <div className="flex items-center gap-4 flex-1">
+                              {item.imageUrl && (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <div className="font-medium flex items-center gap-2">
+                                  {item.name}
+                                  {!item.isAvailable && (
+                                    <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
+                                      Indisponível
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.description}
+                                </div>
+                                <div className="font-medium text-primary mt-1">
+                                  {formatCurrency(item.price)}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              <div className="font-medium">
-                                R$ {item.price.toFixed(2)}
-                              </div>
                               <div className="flex items-center gap-2">
+                                <label htmlFor={`toggle-${item.id}`} className="text-sm font-medium">
+                                  {item.isAvailable ? 'Disponível' : 'Indisponível'}
+                                </label>
                                 <Switch
+                                  id={`toggle-${item.id}`}
                                   checked={item.isAvailable}
                                   onCheckedChange={() => handleToggleItemAvailability(item.id)}
                                 />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveItem(item.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  Remover
-                                </Button>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                Excluir
+                              </Button>
                             </div>
                           </div>
                         ))}

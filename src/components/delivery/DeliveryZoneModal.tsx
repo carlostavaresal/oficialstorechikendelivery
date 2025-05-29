@@ -10,7 +10,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DeliveryZone } from "@/pages/delivery/DeliveryAreas";
+
+// Interface local para zona de entrega (não mais exportada do DeliveryAreas)
+interface DeliveryZone {
+  id: string;
+  name: string;
+  radius: number;
+  fee: number;
+  estimatedTime: number;
+}
 
 export interface DeliveryZoneModalProps {
   isOpen: boolean;

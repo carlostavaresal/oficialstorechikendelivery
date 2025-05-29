@@ -105,11 +105,11 @@ const DeliveryAreas: React.FC = () => {
           onAddressUpdate={handleSetBusinessAddress}
         />
 
-        {/* Delivery Settings */}
+        {/* Simple Delivery Settings */}
         {businessAddress && (
           <Card>
             <CardHeader>
-              <CardTitle>Configurações de Entrega</CardTitle>
+              <CardTitle>Configuração de Entrega</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,6 +124,9 @@ const DeliveryAreas: React.FC = () => {
                     onChange={(e) => setDeliveryRadius(e.target.value)}
                     placeholder="Ex: 5"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Distância máxima para entrega a partir do seu endereço
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="deliveryFee">Taxa de Entrega (R$)</Label>
@@ -136,12 +139,15 @@ const DeliveryAreas: React.FC = () => {
                     onChange={(e) => setDeliveryFee(e.target.value)}
                     placeholder="Ex: 5.00"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Valor cobrado pela entrega dentro do raio configurado
+                  </p>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-6">
                 <Button onClick={handleSaveSettings} className="flex items-center gap-2">
                   <Save className="h-4 w-4" />
-                  Salvar Configurações
+                  Salvar Configurações de Entrega
                 </Button>
               </div>
             </CardContent>
