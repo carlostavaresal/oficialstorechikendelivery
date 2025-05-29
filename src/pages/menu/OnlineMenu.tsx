@@ -42,9 +42,9 @@ const OnlineMenu: React.FC = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [items, setItems] = useState<MenuItem[]>(() => {
-    const savedItems = localStorage.getItem("products");
-    if (savedItems) {
-      const products = JSON.parse(savedItems);
+    const savedProducts = localStorage.getItem("products");
+    if (savedProducts) {
+      const products = JSON.parse(savedProducts);
       return products.map((product: any) => ({
         id: product.id,
         name: product.name,
@@ -68,10 +68,10 @@ const OnlineMenu: React.FC = () => {
   // Update items when products change
   React.useEffect(() => {
     const handleProductsUpdate = () => {
-      const savedItems = localStorage.getItem("products");
-      if (savedItems) {
-        const products = JSON.parse(savedItems);
-        setItems(products.map((product: any) => ({
+      const savedProducts = localStorage.getItem("products");
+      if (savedProducts) {
+        const products = JSON.parse(savedProducts);
+        const updatedItems = products.map((product: any) => ({
           id: product.id,
           name: product.name,
           description: product.description,
@@ -79,10 +79,13 @@ const OnlineMenu: React.FC = () => {
           category: product.category || "Geral",
           isAvailable: true,
           imageUrl: product.image
-        })));
+        }));
+        setItems(updatedItems);
+        console.log('Items atualizados:', updatedItems);
       }
     };
 
+    handleProductsUpdate();
     window.addEventListener("productsUpdated", handleProductsUpdate);
     return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
   }, []);
@@ -279,6 +282,10 @@ const OnlineMenu: React.FC = () => {
                                 src={item.imageUrl || "/placeholder.svg"}
                                 alt={item.name}
                                 className="absolute inset-0 h-full w-full object-cover"
+                                onError={(e) => {
+                                  console.log('Erro ao carregar imagem:', item.imageUrl);
+                                  e.currentTarget.src = "/placeholder.svg";
+                                }}
                               />
                               {!item.isAvailable && (
                                 <div className="absolute top-2 right-2">
