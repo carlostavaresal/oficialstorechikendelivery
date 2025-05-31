@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Order } from '@/types/database';
+import { Order, OrderItem } from '@/types/database';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -44,7 +44,7 @@ export const useOrders = () => {
       // Transform the data to match our Order interface
       const transformedOrders: Order[] = (data || []).map(row => ({
         ...row,
-        items: Array.isArray(row.items) ? row.items : [],
+        items: Array.isArray(row.items) ? row.items as OrderItem[] : [],
         notes: row.notes || undefined
       }));
       
@@ -64,7 +64,7 @@ export const useOrders = () => {
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           customer_address: orderData.customer_address,
-          items: orderData.items,
+          items: orderData.items as any, // Cast to Json for Supabase
           total_amount: orderData.total_amount,
           payment_method: orderData.payment_method,
           notes: orderData.notes,
