@@ -17,9 +17,6 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
           </Link>
           <div className="flex items-center space-x-4">
             <ShareMenu />
-            <Link to="/" className="text-sm hover:underline">
-              Área Administrativa
-            </Link>
           </div>
         </div>
       </header>
