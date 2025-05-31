@@ -9,9 +9,11 @@ import DeliveryMap from "@/components/dashboard/DeliveryMap";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NOTIFICATION_SOUNDS, playNotificationSound } from "@/lib/soundUtils";
+import { useOrders } from "@/hooks/useOrders";
 
 const Dashboard: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const { orders, loading } = useOrders();
   
   // Set sound enabled/disabled preference in localStorage
   useEffect(() => {
@@ -49,6 +51,15 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Calculate stats from real orders
+  const totalOrders = orders.length;
+  const deliveredToday = orders.filter(order => {
+    const today = new Date();
+    const orderDate = new Date(order.created_at);
+    return order.status === 'delivered' && 
+           orderDate.toDateString() === today.toDateString();
+  }).length;
+
   return (
     <DashboardLayout>
       <div className="mb-6 flex justify-between items-center">
@@ -81,12 +92,12 @@ const Dashboard: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total de Pedidos"
-          value="0"
+          value={totalOrders.toString()}
           icon={ShoppingCart}
         />
         <StatsCard
           title="Entregues Hoje"
-          value="0"
+          value={deliveredToday.toString()}
           icon={Package}
         />
         <StatsCard

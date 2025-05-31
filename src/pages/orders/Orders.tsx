@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Table,
@@ -25,30 +25,10 @@ import OrderModal from "@/components/orders/OrderModal";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
+import { useOrders } from "@/hooks/useOrders";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: string;
-}
-
-interface Order {
-  id: string;
-  customer: string;
-  status: "pending" | "processing" | "delivered" | "cancelled";
-  total: string;
-  date: Date;
-  items: number;
-  address: string;
-  phone?: string;
-  orderItems?: OrderItem[];
-  paymentMethod?: PaymentMethod;
-}
-
-// Start with empty orders array
-const mockOrders: Order[] = [];
-
-const getStatusBadgeVariant = (status: Order["status"]) => {
+const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "delivered":
       return "outline";
@@ -63,7 +43,7 @@ const getStatusBadgeVariant = (status: Order["status"]) => {
   }
 };
 
-const getStatusLabel = (status: Order["status"]) => {
+const getStatusLabel = (status: string) => {
   switch (status) {
     case "delivered":
       return "Entregue";
@@ -78,58 +58,48 @@ const getStatusLabel = (status: Order["status"]) => {
   }
 };
 
-// Extract order number from order ID for sorting
-const extractOrderNumber = (orderId: string): number => {
-  // Extract the numeric part from strings like "#ORD-001"
-  const match = orderId.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 0;
-};
-
 // Format WhatsApp number for proper linking
 const formatPhoneForWhatsApp = (phone: string) => {
-  // Remove non-numeric characters
   const numericOnly = phone.replace(/\D/g, "");
-  
-  // Add country code if not present (assuming Brazil)
   if (numericOnly.length === 11 || numericOnly.length === 10) {
     return `55${numericOnly}`;
   }
-  
   return numericOnly;
 };
 
 const Orders: React.FC = () => {
   const { toast } = useToast();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { orders, loading, updateOrderStatus } = useOrders();
+  const { settings } = useCompanySettings();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Sort orders by number on initial load
-  useEffect(() => {
-    setOrders(prevOrders => 
-      [...prevOrders].sort((a, b) => extractOrderNumber(a.id) - extractOrderNumber(b.id))
-    );
-  }, []);
-
-  const handleOpenOrderDetails = (order: Order) => {
-    setSelectedOrder(order);
+  const handleOpenOrderDetails = (order: any) => {
+    const formattedOrder = {
+      id: order.order_number,
+      customer: order.customer_name,
+      status: order.status,
+      total: `R$ ${order.total_amount.toFixed(2)}`,
+      date: new Date(order.created_at),
+      items: order.items.length,
+      address: order.customer_address,
+      phone: order.customer_phone,
+      orderItems: order.items,
+      paymentMethod: order.payment_method as PaymentMethod,
+      notes: order.notes
+    };
+    setSelectedOrder(formattedOrder);
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    // Find the order by order_number instead of id
+    const order = orders.find(o => o.order_number === orderId);
+    if (!order) return;
+
+    const success = await updateOrderStatus(order.id, newStatus as any);
     
-    setSelectedOrder(prevOrder => 
-      prevOrder && prevOrder.id === orderId ? 
-      { ...prevOrder, status: newStatus } : prevOrder
-    );
-    
-    // Find the updated order to send appropriate notification
-    const updatedOrder = orders.find(order => order.id === orderId);
-    
-    if (!updatedOrder) return;
+    if (!success) return;
     
     let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
     let statusMessage = "em preparação";
@@ -168,13 +138,30 @@ const Orders: React.FC = () => {
     });
     
     // Send WhatsApp notification to customer if phone is available
-    if (updatedOrder.phone) {
+    if (order.customer_phone && settings?.whatsapp_number) {
       const message = encodeURIComponent(
-        `Olá ${updatedOrder.customer}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
+        `Olá ${order.customer_name}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
       );
-      window.open(`https://wa.me/${formatPhoneForWhatsApp(updatedOrder.phone)}?text=${message}`, "_blank");
+      window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Pedidos</h1>
+          </div>
+          <div className="rounded-lg border bg-card shadow">
+            <div className="p-6 text-center text-muted-foreground">
+              <p>Carregando pedidos...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -225,23 +212,23 @@ const Orders: React.FC = () => {
                       className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
                       onClick={() => handleOpenOrderDetails(order)}
                     >
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{order.customer}</TableCell>
+                      <TableCell className="font-medium">{order.order_number}</TableCell>
+                      <TableCell>{order.customer_name}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(order.status)}>
                           {getStatusLabel(order.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{order.total}</TableCell>
+                      <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
                       <TableCell>
-                        {formatDistanceToNow(order.date, {
+                        {formatDistanceToNow(new Date(order.created_at), {
                           addSuffix: true,
                           locale: ptBR,
                         })}
                       </TableCell>
-                      <TableCell>{order.items} itens</TableCell>
+                      <TableCell>{order.items.length} itens</TableCell>
                       <TableCell className="max-w-[200px] truncate">
-                        {order.address}
+                        {order.customer_address}
                       </TableCell>
                     </TableRow>
                   ))}

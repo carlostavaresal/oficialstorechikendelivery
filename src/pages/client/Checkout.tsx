@@ -10,16 +10,21 @@ import ClientLayout from "@/components/layout/ClientLayout";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
+import { useOrders } from "@/hooks/useOrders";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { createOrder } = useOrders();
+  const { settings } = useCompanySettings();
   const [cart, setCart] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Load cart from localStorage
@@ -33,10 +38,20 @@ const Checkout = () => {
   }, [navigate]);
 
   const calculateTotal = (): number => {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = settings?.delivery_fee || 0;
+    return subtotal + deliveryFee;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const formatPhoneForWhatsApp = (phone: string) => {
+    const numericOnly = phone.replace(/\D/g, "");
+    if (numericOnly.length === 11 || numericOnly.length === 10) {
+      return `55${numericOnly}`;
+    }
+    return numericOnly;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name || !phone || !address) {
@@ -48,41 +63,94 @@ const Checkout = () => {
       return;
     }
 
-    // Save order
-    const order = {
-      id: `#ORD-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      customer: name,
-      phone,
-      address,
-      items: cart,
-      notes,
-      total: calculateTotal(),
-      paymentMethod,
-      status: "pending",
-      date: new Date(),
-    };
+    const minimumOrder = settings?.minimum_order || 0;
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    if (subtotal < minimumOrder) {
+      toast({
+        title: "Pedido mínimo não atingido",
+        description: `O valor mínimo para pedidos é R$ ${minimumOrder.toFixed(2)}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Save order to localStorage
-    const savedOrders = localStorage.getItem("orders") || "[]";
-    const orders = JSON.parse(savedOrders);
-    orders.push(order);
-    localStorage.setItem("orders", JSON.stringify(orders));
-    
-    // Clear cart
-    localStorage.removeItem("cart");
-    
-    // Notification sound
-    playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER);
-    
-    // Success toast
-    toast({
-      title: "Pedido realizado!",
-      description: "Seu pedido foi enviado com sucesso.",
-    });
-    
-    // Redirect to success page
-    navigate("/client/success");
+    setIsSubmitting(true);
+
+    try {
+      // Create order in database
+      const orderData = {
+        customer_name: name,
+        customer_phone: phone,
+        customer_address: address,
+        items: cart.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        total_amount: calculateTotal(),
+        payment_method: paymentMethod,
+        notes: notes || undefined,
+        status: 'pending' as const
+      };
+
+      const newOrder = await createOrder(orderData);
+      
+      // Clear cart
+      localStorage.removeItem("cart");
+      
+      // Notification sound
+      playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER);
+      
+      // Send to WhatsApp if number is configured
+      if (settings?.whatsapp_number) {
+        const orderItems = cart.map(item => 
+          `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
+        ).join('\n');
+        
+        const deliveryFee = settings.delivery_fee || 0;
+        const total = calculateTotal();
+        
+        const message = encodeURIComponent(
+          `🛒 *NOVO PEDIDO* - ${newOrder.order_number}\n\n` +
+          `👤 *Cliente:* ${name}\n` +
+          `📱 *Telefone:* ${phone}\n` +
+          `📍 *Endereço:* ${address}\n\n` +
+          `📋 *Itens:*\n${orderItems}\n\n` +
+          `💳 *Pagamento:* ${paymentMethod}\n` +
+          (deliveryFee > 0 ? `🚚 *Taxa de Entrega:* R$ ${deliveryFee.toFixed(2)}\n` : '') +
+          `💰 *Total:* R$ ${total.toFixed(2)}\n\n` +
+          (notes ? `📝 *Observações:* ${notes}\n\n` : '') +
+          `Confirmar este pedido?`
+        );
+        
+        window.open(`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}?text=${message}`, "_blank");
+      }
+      
+      // Success toast
+      toast({
+        title: "Pedido realizado!",
+        description: "Seu pedido foi enviado com sucesso.",
+      });
+      
+      // Redirect to success page
+      navigate("/client/success");
+      
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Erro ao criar pedido",
+        description: "Ocorreu um erro ao processar seu pedido. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = settings?.delivery_fee || 0;
+  const total = calculateTotal();
 
   return (
     <ClientLayout>
@@ -104,6 +172,7 @@ const Checkout = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 
@@ -118,6 +187,7 @@ const Checkout = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(99) 99999-9999"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 
@@ -131,6 +201,7 @@ const Checkout = () => {
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Rua, número, complemento, bairro, cidade"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 
@@ -143,6 +214,7 @@ const Checkout = () => {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Ex: Sem cebola, troco para R$ 50,00, etc."
+                    disabled={isSubmitting}
                   />
                 </div>
                 
@@ -153,11 +225,12 @@ const Checkout = () => {
                   <PaymentMethodSelector
                     value={paymentMethod}
                     onChange={setPaymentMethod}
+                    disabled={isSubmitting}
                   />
                 </div>
                 
-                <Button type="submit" className="w-full">
-                  Finalizar Pedido
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Processando..." : "Finalizar Pedido"}
                 </Button>
               </form>
             </div>
@@ -182,15 +255,32 @@ const Checkout = () => {
                   
                   <Separator />
                   
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>R$ {subtotal.toFixed(2)}</span>
+                  </div>
+                  
+                  {deliveryFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Taxa de Entrega</span>
+                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  <Separator />
+                  
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {calculateTotal().toFixed(2)}</span>
+                    <span>R$ {total.toFixed(2)}</span>
                   </div>
                   
                   <Separator />
                   
                   <div className="text-sm text-muted-foreground">
                     <p>* Campos obrigatórios</p>
+                    {settings?.minimum_order && settings.minimum_order > 0 && (
+                      <p className="mt-1">Pedido mínimo: R$ {settings.minimum_order.toFixed(2)}</p>
+                    )}
                     <p className="mt-2">Após finalizar o pedido, entraremos em contato para confirmar os detalhes.</p>
                   </div>
                 </div>
