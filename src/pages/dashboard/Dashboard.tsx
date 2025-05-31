@@ -81,25 +81,22 @@ const Dashboard: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total de Pedidos"
-          value="284"
+          value="0"
           icon={ShoppingCart}
-          change={{ value: "12%", positive: true }}
         />
         <StatsCard
           title="Entregues Hoje"
-          value="38"
+          value="0"
           icon={Package}
-          change={{ value: "8%", positive: true }}
         />
         <StatsCard
           title="Tempo Médio"
-          value="32 min"
+          value="0 min"
           icon={Clock}
-          change={{ value: "5%", positive: false }}
         />
         <StatsCard
           title="Entregadores Ativos"
-          value="12"
+          value="0"
           icon={Truck}
         />
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,6 @@ import ClientLayout from "@/components/layout/ClientLayout";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
-import PromoCodeInput from "@/components/client/PromoCodeInput";
-
-// Adicionando o componente PromoCodeInput à página de checkout do cliente
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -22,8 +20,6 @@ const Checkout = () => {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
-  const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
 
   useEffect(() => {
     // Load cart from localStorage
@@ -38,31 +34,6 @@ const Checkout = () => {
 
   const calculateTotal = (): number => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
-
-  const calculateDiscount = (): number => {
-    const subtotal = calculateTotal();
-    if (discountType === "percentage") {
-      return subtotal * discount;
-    }
-    return discount; // fixed amount
-  };
-
-  const calculateFinalTotal = (): number => {
-    return Math.max(0, calculateTotal() - calculateDiscount());
-  };
-
-  const handleApplyPromoCode = (discountValue: number) => {
-    // Determinar o tipo de desconto baseado no valor
-    if (discountValue >= 1) {
-      // Se for maior ou igual a 1, consideramos como um valor fixo
-      setDiscountType("fixed");
-      setDiscount(discountValue);
-    } else {
-      // Se for menor que 1, consideramos como uma porcentagem (ex: 0.15 para 15%)
-      setDiscountType("percentage");
-      setDiscount(discountValue);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,9 +56,7 @@ const Checkout = () => {
       address,
       items: cart,
       notes,
-      total: calculateFinalTotal(),
-      subtotal: calculateTotal(),
-      discount: calculateDiscount(),
+      total: calculateTotal(),
       paymentMethod,
       status: "pending",
       date: new Date(),
@@ -187,10 +156,6 @@ const Checkout = () => {
                   />
                 </div>
                 
-                <div>
-                  <PromoCodeInput onApply={handleApplyPromoCode} />
-                </div>
-                
                 <Button type="submit" className="w-full">
                   Finalizar Pedido
                 </Button>
@@ -217,21 +182,9 @@ const Checkout = () => {
                   
                   <Separator />
                   
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>R$ {calculateTotal().toFixed(2)}</span>
-                  </div>
-                  
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Desconto</span>
-                      <span>- R$ {calculateDiscount().toFixed(2)}</span>
-                    </div>
-                  )}
-                  
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {calculateFinalTotal().toFixed(2)}</span>
+                    <span>R$ {calculateTotal().toFixed(2)}</span>
                   </div>
                   
                   <Separator />
