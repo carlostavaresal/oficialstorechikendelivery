@@ -26,7 +26,7 @@ interface Order {
   id: string;
   customer: string;
   status: "pending" | "processing" | "delivered" | "cancelled";
-  total: string;
+  total: string | number;
   date: Date;
   items: number;
   phone?: string;
@@ -140,7 +140,7 @@ const RecentOrders: React.FC = () => {
           // Show toast notification
           toast({
             title: "Novo Pedido Recebido!",
-            description: `Pedido ${newOrder.id} de ${newOrder.customer} - R$ ${newOrder.total.toFixed(2)}`,
+            description: `Pedido ${newOrder.id} de ${newOrder.customer} - R$ ${typeof newOrder.total === 'number' ? newOrder.total.toFixed(2) : newOrder.total}`,
           });
           
           lastOrderCountRef.current = loadedOrders.length;

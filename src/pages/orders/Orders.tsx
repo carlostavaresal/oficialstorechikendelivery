@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -44,98 +45,8 @@ interface Order {
   paymentMethod?: PaymentMethod;
 }
 
-const mockOrders: Order[] = [
-  {
-    id: "#ORD-001",
-    customer: "Carlos Silva",
-    status: "delivered",
-    total: "R$ 54,90",
-    date: new Date(2025, 4, 4, 15, 30),
-    items: 3,
-    address: "Rua das Flores, 123",
-    phone: "11999887766",
-    orderItems: [
-      { name: "X-Burger", quantity: 1, price: "R$ 24,90" },
-      { name: "Batata Frita", quantity: 1, price: "R$ 15,00" },
-      { name: "Refrigerante", quantity: 1, price: "R$ 15,00" },
-    ],
-    paymentMethod: "credit"
-  },
-  {
-    id: "#ORD-002",
-    customer: "Ana Oliveira",
-    status: "processing",
-    total: "R$ 32,50",
-    date: new Date(2025, 4, 5, 10, 15),
-    items: 2,
-    address: "Av. Paulista, 1000",
-    phone: "11988776655",
-    orderItems: [
-      { name: "Pizza Média", quantity: 1, price: "R$ 32,50" },
-    ],
-    paymentMethod: "pix"
-  },
-  {
-    id: "#ORD-003",
-    customer: "Paulo Costa",
-    status: "pending",
-    total: "R$ 78,00",
-    date: new Date(2025, 4, 5, 9, 45),
-    items: 5,
-    address: "Rua Augusta, 500",
-    paymentMethod: "cash"
-  },
-  {
-    id: "#ORD-004",
-    customer: "Mariana Souza",
-    status: "cancelled",
-    total: "R$ 45,20",
-    date: new Date(2025, 4, 4, 18, 22),
-    items: 4,
-    address: "Alameda Santos, 45",
-    paymentMethod: "debit"
-  },
-  {
-    id: "#ORD-005",
-    customer: "Lucas Mendes",
-    status: "delivered",
-    total: "R$ 63,75",
-    date: new Date(2025, 4, 4, 12, 10),
-    items: 3,
-    address: "Rua Oscar Freire, 200",
-    paymentMethod: "credit"
-  },
-  {
-    id: "#ORD-006",
-    customer: "Juliana Alves",
-    status: "processing",
-    total: "R$ 42,30",
-    date: new Date(2025, 4, 5, 8, 25),
-    items: 2,
-    address: "Av. Rebouças, 1500",
-    paymentMethod: "pix"
-  },
-  {
-    id: "#ORD-007",
-    customer: "Roberto Santos",
-    status: "pending",
-    total: "R$ 87,50",
-    date: new Date(2025, 4, 5, 11, 40),
-    items: 6,
-    address: "Rua Consolação, 800",
-    paymentMethod: "cash"
-  },
-  {
-    id: "#ORD-008",
-    customer: "Fernanda Lima",
-    status: "delivered",
-    total: "R$ 35,20",
-    date: new Date(2025, 4, 4, 17, 15),
-    items: 2,
-    address: "Av. Brigadeiro Faria Lima, 3000",
-    paymentMethod: "credit"
-  },
-];
+// Start with empty orders array
+const mockOrders: Order[] = [];
 
 const getStatusBadgeVariant = (status: Order["status"]) => {
   switch (status) {
@@ -289,47 +200,54 @@ const Orders: React.FC = () => {
 
         <div className="rounded-lg border bg-card shadow">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pedido</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead>Endereço</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow 
-                    key={order.id}
-                    className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
-                    onClick={() => handleOpenOrderDetails(order)}
-                  >
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(order.status)}>
-                        {getStatusLabel(order.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{order.total}</TableCell>
-                    <TableCell>
-                      {formatDistanceToNow(order.date, {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
-                    </TableCell>
-                    <TableCell>{order.items} itens</TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {order.address}
-                    </TableCell>
+            {orders.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                <p>Nenhum pedido encontrado</p>
+                <p className="text-sm mt-1">Os pedidos aparecerão aqui quando forem realizados</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pedido</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Itens</TableHead>
+                    <TableHead>Endereço</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow 
+                      key={order.id}
+                      className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
+                      onClick={() => handleOpenOrderDetails(order)}
+                    >
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>{order.customer}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(order.status)}>
+                          {getStatusLabel(order.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{order.total}</TableCell>
+                      <TableCell>
+                        {formatDistanceToNow(order.date, {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </TableCell>
+                      <TableCell>{order.items} itens</TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {order.address}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </div>
       </div>
