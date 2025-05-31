@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -22,8 +23,8 @@ const Catalog: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load cart from localStorage
-    const savedCart = localStorage.getItem('clientCart');
+    // Load cart from localStorage with the same key used by Checkout
+    const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     }
@@ -36,10 +37,25 @@ const Catalog: React.FC = () => {
     setIsLoading(false);
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes with the same key used by Checkout
   useEffect(() => {
-    localStorage.setItem('clientCart', JSON.stringify(cart));
-  }, [cart]);
+    // Create cart items with full product information for checkout
+    const cartWithProducts = cart.map(cartItem => {
+      const product = products.find(p => p.id === cartItem.id);
+      if (product) {
+        return {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: cartItem.quantity,
+          notes: cartItem.notes
+        };
+      }
+      return null;
+    }).filter(Boolean);
+    
+    localStorage.setItem('cart', JSON.stringify(cartWithProducts));
+  }, [cart, products]);
 
   const addToCart = (productId: string) => {
     setCart(prevCart => {
