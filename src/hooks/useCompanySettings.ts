@@ -40,7 +40,7 @@ export const useCompanySettings = () => {
       } else {
         const { error } = await supabase
           .from('company_settings')
-          .insert([newSettings as any]);
+          .insert([newSettings]);
 
         if (error) throw error;
       }

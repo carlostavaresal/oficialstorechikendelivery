@@ -1,201 +1,102 @@
 
-import { formatDate } from "./formatters";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: string;
-}
-
-interface PrintableOrder {
+interface Order {
   id: string;
   customer: string;
   status: "pending" | "processing" | "delivered" | "cancelled";
   total: string;
   date: Date;
+  items: number;
   phone?: string;
-  orderItems?: OrderItem[];
+  orderItems?: Array<{
+    name: string;
+    quantity: number;
+    price: string;
+  }>;
   address?: string;
   paymentMethod?: PaymentMethod;
 }
 
-const getPaymentMethodLabel = (method: PaymentMethod | undefined): string => {
-  if (!method) return "Não informado";
+const getPaymentMethodLabel = (method: PaymentMethod): string => {
   switch (method) {
     case "cash": return "Dinheiro";
     case "pix": return "Pix";
     case "credit": return "Cartão de Crédito";
-    case "debit": return "Cartão de Débito";
-    default: return "Não informado";
+    default: return "Desconhecido";
   }
 };
 
-export const printOrder = (order: PrintableOrder, copies: number = 2) => {
-  // Get print settings from localStorage or use defaults
-  const storedSettings = localStorage.getItem("printerSettings");
-  const printerSettings = storedSettings ? JSON.parse(storedSettings) : {
-    paperWidth: "80mm",
-    receiptHeight: "8cm"
-  };
+export const printOrder = (order: Order, copies: number = 1) => {
+  const printWindow = window.open('', '_blank');
   
-  // Create a new hidden iframe for printing
-  const printFrame = document.createElement("iframe");
-  printFrame.style.position = "absolute";
-  printFrame.style.top = "-9999px";
-  printFrame.style.left = "-9999px";
-  document.body.appendChild(printFrame);
-  
-  // Create receipt content
-  const receiptContent = `
+  if (!printWindow) {
+    console.error('Failed to open print window');
+    return;
+  }
+
+  const orderItems = order.orderItems || [];
+  const paymentLabel = order.paymentMethod ? getPaymentMethodLabel(order.paymentMethod) : "Não informado";
+
+  const printContent = `
     <!DOCTYPE html>
     <html>
     <head>
-      <meta charset="utf-8">
-      <title>Recibo de Pedido</title>
+      <title>Pedido ${order.id}</title>
       <style>
-        body {
-          font-family: 'Courier New', monospace;
-          width: ${printerSettings.paperWidth === "80mm" ? "76mm" : "54mm"};
-          height: ${printerSettings.receiptHeight === "automatic" ? "auto" : printerSettings.receiptHeight};
-          padding: 2mm;
-          margin: 0;
-          box-sizing: border-box;
-        }
-        .receipt {
-          width: 100%;
-          border-bottom: 1px dashed #000;
-          padding-bottom: 10px;
-          margin-bottom: ${copies > 1 ? "20px" : "0"};
-          page-break-after: ${copies > 1 ? "always" : "auto"};
-        }
-        .receipt:last-child {
-          border-bottom: none;
-          margin-bottom: 0;
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 10px;
-        }
-        .title {
-          font-weight: bold;
-          font-size: 14px;
-        }
-        .copy-type {
-          font-weight: bold;
-          text-align: center;
-          margin: 5px 0;
-          text-transform: uppercase;
-        }
-        .info {
-          margin-bottom: 10px;
-        }
-        .info div {
-          margin-bottom: 2px;
-        }
-        .items {
-          width: 100%;
-          margin-bottom: 10px;
-        }
-        .items-header {
-          font-weight: bold;
-          border-bottom: 1px solid #000;
-        }
-        .item {
-          display: flex;
-          justify-content: space-between;
-        }
-        .item-qty {
-          width: 20%;
-          text-align: left;
-        }
-        .item-name {
-          width: 50%;
-          text-align: left;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .item-price {
-          width: 30%;
-          text-align: right;
-        }
-        .total {
-          text-align: right;
-          font-weight: bold;
-          border-top: 1px solid #000;
-          padding-top: 5px;
-        }
-        .footer {
-          text-align: center;
-          margin-top: 10px;
-          font-size: 12px;
-        }
         @media print {
-          @page {
-            margin: 0;
-            size: ${printerSettings.paperWidth} ${printerSettings.receiptHeight === "automatic" ? "auto" : printerSettings.receiptHeight};
-          }
+          body { margin: 0; font-family: monospace; font-size: 12px; }
+          .page-break { page-break-after: always; }
         }
+        body { font-family: monospace; font-size: 12px; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .order-info { margin-bottom: 15px; }
+        .items { margin-bottom: 15px; }
+        .total { font-weight: bold; margin-top: 10px; }
+        .footer { margin-top: 20px; text-align: center; }
       </style>
     </head>
     <body>
-      ${Array(copies).fill(null).map((_, index) => `
-        <div class="receipt">
+      ${Array.from({ length: copies }, (_, index) => `
+        <div class="receipt${index < copies - 1 ? ' page-break' : ''}">
           <div class="header">
-            <div class="title">COMPROVANTE DE PEDIDO</div>
-            <div>${formatDate(new Date())}</div>
+            <h2>PEDIDO #${order.id}</h2>
+            <p>${index === 0 ? 'VIA CLIENTE' : 'VIA ENTREGADOR'}</p>
+            <p>${new Date(order.date).toLocaleString('pt-BR')}</p>
           </div>
-          <div class="copy-type">${index === 0 ? "Via do Cliente" : "Via do Entregador"}</div>
-          <div class="info">
-            <div><strong>Pedido:</strong> ${order.id}</div>
-            <div><strong>Cliente:</strong> ${order.customer}</div>
-            ${order.phone ? `<div><strong>Telefone:</strong> ${order.phone}</div>` : ''}
-            ${order.address ? `<div><strong>Endereço:</strong> ${order.address}</div>` : ''}
-            <div><strong>Pagamento:</strong> ${getPaymentMethodLabel(order.paymentMethod)}</div>
+          
+          <div class="order-info">
+            <p><strong>Cliente:</strong> ${order.customer}</p>
+            ${order.phone ? `<p><strong>Telefone:</strong> ${order.phone}</p>` : ''}
+            ${order.address ? `<p><strong>Endereço:</strong> ${order.address}</p>` : ''}
+            <p><strong>Pagamento:</strong> ${paymentLabel}</p>
           </div>
+          
           <div class="items">
-            <div class="items-header">
-              <div class="item">
-                <div class="item-qty">Qtd</div>
-                <div class="item-name">Item</div>
-                <div class="item-price">Preço</div>
-              </div>
-            </div>
-            ${(order.orderItems || []).map(item => `
-              <div class="item">
-                <div class="item-qty">${item.quantity}x</div>
-                <div class="item-name">${item.name}</div>
-                <div class="item-price">${item.price}</div>
-              </div>
+            <h3>ITENS:</h3>
+            ${orderItems.map(item => `
+              <p>${item.quantity}x ${item.name} - ${item.price}</p>
             `).join('')}
           </div>
-          <div class="total">Total: ${order.total}</div>
+          
+          <div class="total">
+            <p>TOTAL: ${order.total}</p>
+          </div>
+          
           <div class="footer">
-            Obrigado pela preferência!
+            <p>Obrigado pela preferência!</p>
           </div>
         </div>
       `).join('')}
     </body>
     </html>
   `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
   
-  // Write the content to the iframe and print it
-  const frameDoc = printFrame.contentWindow?.document;
-  if (frameDoc) {
-    frameDoc.open();
-    frameDoc.write(receiptContent);
-    frameDoc.close();
-    
-    // Add event listener for when printing is done
-    printFrame.onload = function() {
-      setTimeout(function() {
-        printFrame.contentWindow?.print();
-        // Remove the iframe after printing (with a delay to ensure printing completes)
-        setTimeout(function() {
-          document.body.removeChild(printFrame);
-        }, 1000);
-      }, 500);
-    };
-  }
+  printWindow.onload = () => {
+    printWindow.print();
+    printWindow.close();
+  };
 };

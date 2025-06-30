@@ -103,7 +103,7 @@ const Checkout = () => {
       playNotificationSound(NOTIFICATION_SOUNDS.NEW_ORDER);
       
       // Send to WhatsApp if number is configured
-      if (settings?.whatsapp_number) {
+      if (settings?.whatsapp_number && newOrder) {
         const orderItems = cart.map(item => 
           `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
         ).join('\n');
