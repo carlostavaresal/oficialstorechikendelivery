@@ -16,6 +16,7 @@ interface Order {
   }>;
   address?: string;
   paymentMethod?: PaymentMethod;
+  notes?: string;
 }
 
 const getPaymentMethodLabel = (method: PaymentMethod): string => {
@@ -27,7 +28,7 @@ const getPaymentMethodLabel = (method: PaymentMethod): string => {
   }
 };
 
-export const printOrder = (order: Order, copies: number = 1) => {
+export const printOrder = (order: Order, copies: number = 2) => {
   const printWindow = window.open('', '_blank');
   
   if (!printWindow) {
@@ -47,44 +48,63 @@ export const printOrder = (order: Order, copies: number = 1) => {
         @media print {
           body { margin: 0; font-family: monospace; font-size: 12px; }
           .page-break { page-break-after: always; }
+          .via-label { font-weight: bold; text-align: center; margin: 10px 0; }
         }
         body { font-family: monospace; font-size: 12px; line-height: 1.4; }
-        .header { text-align: center; margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
         .order-info { margin-bottom: 15px; }
-        .items { margin-bottom: 15px; }
-        .total { font-weight: bold; margin-top: 10px; }
-        .footer { margin-top: 20px; text-align: center; }
+        .items { margin-bottom: 15px; border-top: 1px dashed #000; padding-top: 10px; }
+        .total { font-weight: bold; margin-top: 10px; border-top: 2px solid #000; padding-top: 5px; }
+        .footer { margin-top: 20px; text-align: center; border-top: 1px dashed #000; padding-top: 10px; }
+        .delivery-info { background: #f5f5f5; padding: 10px; margin: 10px 0; border: 1px solid #ddd; }
       </style>
     </head>
     <body>
       ${Array.from({ length: copies }, (_, index) => `
         <div class="receipt${index < copies - 1 ? ' page-break' : ''}">
+          <div class="via-label">
+            ${index === 0 ? '=== VIA DO CLIENTE ===' : '=== VIA DO ENTREGADOR ==='}
+          </div>
+          
           <div class="header">
             <h2>PEDIDO #${order.id}</h2>
-            <p>${index === 0 ? 'VIA CLIENTE' : 'VIA ENTREGADOR'}</p>
-            <p>${new Date(order.date).toLocaleString('pt-BR')}</p>
+            <p><strong>Data:</strong> ${new Date(order.date).toLocaleString('pt-BR')}</p>
           </div>
           
           <div class="order-info">
             <p><strong>Cliente:</strong> ${order.customer}</p>
             ${order.phone ? `<p><strong>Telefone:</strong> ${order.phone}</p>` : ''}
-            ${order.address ? `<p><strong>Endereço:</strong> ${order.address}</p>` : ''}
             <p><strong>Pagamento:</strong> ${paymentLabel}</p>
           </div>
           
+          ${order.address ? `
+            <div class="delivery-info">
+              <p><strong>ENDEREÇO DE ENTREGA:</strong></p>
+              <p>${order.address}</p>
+            </div>
+          ` : ''}
+          
           <div class="items">
-            <h3>ITENS:</h3>
+            <h3>ITENS DO PEDIDO:</h3>
             ${orderItems.map(item => `
-              <p>${item.quantity}x ${item.name} - ${item.price}</p>
+              <p>${item.quantity}x ${item.name} ............. ${item.price}</p>
             `).join('')}
           </div>
           
           <div class="total">
-            <p>TOTAL: ${order.total}</p>
+            <p><strong>TOTAL: ${order.total}</strong></p>
           </div>
+          
+          ${order.notes ? `
+            <div style="margin-top: 15px; border-top: 1px dashed #000; padding-top: 10px;">
+              <p><strong>Observações:</strong></p>
+              <p>${order.notes}</p>
+            </div>
+          ` : ''}
           
           <div class="footer">
             <p>Obrigado pela preferência!</p>
+            <p style="font-size: 10px;">Pedido processado em ${new Date().toLocaleString('pt-BR')}</p>
           </div>
         </div>
       `).join('')}

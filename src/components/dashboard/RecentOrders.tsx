@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -61,6 +61,7 @@ const RecentOrders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus } = useOrders();
   const { settings } = useCompanySettings();
+  const { sendOrderToWhatsApp } = useWhatsAppIntegration();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -155,7 +156,7 @@ const RecentOrders: React.FC = () => {
   return (
     <div className="rounded-lg border bg-card shadow animate-slide-in" style={{ animationDelay: "0.1s" }}>
       <div className="flex items-center justify-between border-b px-6 py-4">
-        <h2 className="font-semibold">Pedidos Recentes</h2>
+        <h2 className="font-semibold">Pedidos Recentes - Tempo Real</h2>
         <Link
           to="/orders"
           className="text-sm text-primary hover:underline"
@@ -167,7 +168,7 @@ const RecentOrders: React.FC = () => {
         {recentOrders.length === 0 ? (
           <div className="p-6 text-center text-muted-foreground">
             <p>Nenhum pedido encontrado</p>
-            <p className="text-sm mt-1">Os pedidos aparecerão aqui quando forem realizados</p>
+            <p className="text-sm mt-1">Os pedidos aparecerão aqui em tempo real quando forem realizados</p>
           </div>
         ) : (
           <Table>
@@ -175,6 +176,8 @@ const RecentOrders: React.FC = () => {
               <TableRow>
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Endereço</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Data</TableHead>
@@ -185,21 +188,25 @@ const RecentOrders: React.FC = () => {
               {recentOrders.map((order) => (
                 <TableRow 
                   key={order.id}
-                  className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
+                  className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""} ${order.status === "pending" ? "bg-yellow-50 border-l-4 border-l-yellow-400" : ""}`}
                   onClick={() => handleOpenOrderDetails(order)}
                 >
                   <TableCell className="font-medium">{order.order_number}</TableCell>
-                  <TableCell>{order.customer_name}</TableCell>
+                  <TableCell className="font-medium">{order.customer_name}</TableCell>
+                  <TableCell className="text-sm">{order.customer_phone}</TableCell>
+                  <TableCell className="max-w-[200px] truncate text-sm" title={order.customer_address}>
+                    {order.customer_address}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(order.status)}>
                       {getStatusLabel(order.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium">R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-sm">
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>
-                  <TableCell>{order.items.length} itens</TableCell>
+                  <TableCell className="text-center">{order.items.length}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -38,7 +38,7 @@ export const useCompanySettings = () => {
     }
   };
 
-  const updateSettings = async (newSettings: Partial<CompanySettings>) => {
+  const updateSettings = async (newSettings: Partial<Omit<CompanySettings, 'id' | 'created_at' | 'updated_at'>>) => {
     try {
       if (settings) {
         const { error } = await supabase
@@ -48,9 +48,20 @@ export const useCompanySettings = () => {
 
         if (error) throw error;
       } else {
+        // Ensure whatsapp_number is provided for new records
+        if (!newSettings.whatsapp_number) {
+          throw new Error('WhatsApp number is required');
+        }
+
         const { error } = await supabase
           .from('company_settings')
-          .insert([newSettings]);
+          .insert([{
+            whatsapp_number: newSettings.whatsapp_number,
+            company_name: newSettings.company_name,
+            company_address: newSettings.company_address,
+            delivery_fee: newSettings.delivery_fee,
+            minimum_order: newSettings.minimum_order
+          }]);
 
         if (error) throw error;
       }

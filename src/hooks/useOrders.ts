@@ -65,7 +65,8 @@ export const useOrders = () => {
       const transformedOrders: Order[] = (data || []).map(row => ({
         ...row,
         items: Array.isArray(row.items) ? row.items as OrderItem[] : [],
-        notes: row.notes || undefined
+        notes: row.notes || undefined,
+        status: row.status as 'pending' | 'processing' | 'delivered' | 'cancelled'
       }));
       
       setOrders(transformedOrders);
@@ -84,7 +85,7 @@ export const useOrders = () => {
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           customer_address: orderData.customer_address,
-          items: orderData.items,
+          items: orderData.items as any, // Cast to Json for Supabase
           total_amount: orderData.total_amount,
           payment_method: orderData.payment_method,
           notes: orderData.notes,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ArrowDown, ArrowUp, Clock, Package, ShoppingCart, Truck, VolumeX, Volume2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -10,10 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NOTIFICATION_SOUNDS, playNotificationSound } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
+import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const Dashboard: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const { orders, loading } = useOrders();
+  
+  // Initialize WhatsApp integration
+  useWhatsAppIntegration();
   
   // Set sound enabled/disabled preference in localStorage
   useEffect(() => {
@@ -60,13 +63,16 @@ const Dashboard: React.FC = () => {
            orderDate.toDateString() === today.toDateString();
   }).length;
 
+  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const processingOrders = orders.filter(order => order.status === 'processing').length;
+
   return (
     <DashboardLayout>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Dashboard - Tempo Real</h1>
           <p className="text-muted-foreground">
-            Bem-vindo ao seu painel de controle de delivery.
+            Painel de controle com integração WhatsApp Business e atualizações em tempo real.
           </p>
         </div>
         
@@ -96,18 +102,20 @@ const Dashboard: React.FC = () => {
           icon={ShoppingCart}
         />
         <StatsCard
+          title="Pedidos Pendentes"
+          value={pendingOrders.toString()}
+          icon={Clock}
+          className={pendingOrders > 0 ? "border-yellow-400 bg-yellow-50" : ""}
+        />
+        <StatsCard
+          title="Em Preparo"
+          value={processingOrders.toString()}
+          icon={Package}
+          className={processingOrders > 0 ? "border-blue-400 bg-blue-50" : ""}
+        />
+        <StatsCard
           title="Entregues Hoje"
           value={deliveredToday.toString()}
-          icon={Package}
-        />
-        <StatsCard
-          title="Tempo Médio"
-          value="0 min"
-          icon={Clock}
-        />
-        <StatsCard
-          title="Entregadores Ativos"
-          value="0"
           icon={Truck}
         />
       </div>
