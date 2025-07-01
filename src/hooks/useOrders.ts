@@ -61,10 +61,10 @@ export const useOrders = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our Order interface
+      // Transform the data to match our Order interface with proper type conversion
       const transformedOrders: Order[] = (data || []).map(row => ({
         ...row,
-        items: Array.isArray(row.items) ? row.items as OrderItem[] : [],
+        items: Array.isArray(row.items) ? (row.items as unknown as OrderItem[]) : [],
         notes: row.notes || undefined,
         status: row.status as 'pending' | 'processing' | 'delivered' | 'cancelled'
       }));

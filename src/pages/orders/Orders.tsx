@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useCustomerNotifications } from "@/hooks/useCustomerNotifications";
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -48,7 +49,7 @@ const getStatusLabel = (status: string) => {
     case "delivered":
       return "Entregue";
     case "processing":
-      return "Em preparo";
+      return "Saiu para entrega";
     case "pending":
       return "Aguardando";
     case "cancelled":
@@ -71,6 +72,7 @@ const Orders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus } = useOrders();
   const { settings } = useCompanySettings();
+  const { sendDeliveryNotification } = useCustomerNotifications();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -118,8 +120,10 @@ const Orders: React.FC = () => {
         break;
       case "processing":
         soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "em preparação";
-        toastTitle = "Pedido em Preparação";
+        statusMessage = "saiu para entrega";
+        toastTitle = "Pedido Saiu para Entrega";
+        // Send delivery notification to customer
+        sendDeliveryNotification(order);
         break;
       case "pending":
         soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
@@ -136,14 +140,6 @@ const Orders: React.FC = () => {
       title: toastTitle,
       description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
     });
-    
-    // Send WhatsApp notification to customer if phone is available
-    if (order.customer_phone && settings?.whatsapp_number) {
-      const message = encodeURIComponent(
-        `Olá ${order.customer_name}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
-      );
-      window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
-    }
   };
 
   if (loading) {
@@ -182,7 +178,7 @@ const Orders: React.FC = () => {
         </Breadcrumb>
 
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Pedidos</h1>
+          <h1 className="text-3xl font-bold">Pedidos em Tempo Real</h1>
         </div>
 
         <div className="rounded-lg border bg-card shadow">
@@ -198,10 +194,10 @@ const Orders: React.FC = () => {
                   <TableRow>
                     <TableHead>Pedido</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Telefone</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Data</TableHead>
-                    <TableHead>Itens</TableHead>
                     <TableHead>Endereço</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -209,11 +205,16 @@ const Orders: React.FC = () => {
                   {orders.map((order) => (
                     <TableRow 
                       key={order.id}
-                      className={`cursor-pointer hover:bg-muted ${order.status === "cancelled" ? "bg-muted/30" : ""}`}
+                      className={`cursor-pointer hover:bg-muted ${
+                        order.status === "pending" ? "bg-yellow-50 border-l-4 border-l-yellow-400" : 
+                        order.status === "processing" ? "bg-blue-50 border-l-4 border-l-blue-400" :
+                        order.status === "cancelled" ? "bg-red-50 border-l-4 border-l-red-400" : ""
+                      }`}
                       onClick={() => handleOpenOrderDetails(order)}
                     >
                       <TableCell className="font-medium">{order.order_number}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
+                      <TableCell>{order.customer_phone}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(order.status)}>
                           {getStatusLabel(order.status)}
@@ -226,7 +227,6 @@ const Orders: React.FC = () => {
                           locale: ptBR,
                         })}
                       </TableCell>
-                      <TableCell>{order.items.length} itens</TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {order.customer_address}
                       </TableCell>

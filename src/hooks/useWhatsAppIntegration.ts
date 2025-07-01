@@ -3,11 +3,13 @@ import { useEffect } from 'react';
 import { useOrders } from './useOrders';
 import { useCompanySettings } from './useCompanySettings';
 import { useToast } from './use-toast';
+import { useCustomerNotifications } from './useCustomerNotifications';
 
 export const useWhatsAppIntegration = () => {
   const { orders } = useOrders();
   const { settings } = useCompanySettings();
   const { toast } = useToast();
+  const { sendOrderConfirmation } = useCustomerNotifications();
 
   // Format WhatsApp number for proper linking
   const formatPhoneForWhatsApp = (phone: string) => {
@@ -25,10 +27,10 @@ export const useWhatsAppIntegration = () => {
     }
 
     const itemsList = order.items.map((item: any) => 
-      `${item.quantity}x ${item.name} - R$ ${item.price.toFixed(2)}`
+      `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
 
-    const message = `🍕 *NOVO PEDIDO - ${order.order_number}*
+    const message = `🍕 *NOVO PEDIDO* - ${order.order_number}
 
 👤 *Cliente:* ${order.customer_name}
 📞 *Telefone:* ${order.customer_phone}
@@ -41,7 +43,9 @@ ${itemsList}
 💳 *Pagamento:* ${order.payment_method}
 ${order.notes ? `📋 *Observações:* ${order.notes}` : ''}
 
-⏰ *Pedido realizado em:* ${new Date(order.created_at).toLocaleString('pt-BR')}`;
+⏰ *Pedido realizado em:* ${new Date(order.created_at).toLocaleString('pt-BR')}
+
+Por favor, confirme o recebimento deste pedido.`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappBusinessNumber = formatPhoneForWhatsApp(settings.whatsapp_number);
@@ -49,6 +53,11 @@ ${order.notes ? `📋 *Observações:* ${order.notes}` : ''}
     
     // Open WhatsApp Business automatically
     window.open(whatsappUrl, '_blank');
+    
+    // Send confirmation to customer
+    setTimeout(() => {
+      sendOrderConfirmation(order);
+    }, 2000); // Wait 2 seconds before sending customer confirmation
     
     toast({
       title: "Pedido enviado para WhatsApp Business",

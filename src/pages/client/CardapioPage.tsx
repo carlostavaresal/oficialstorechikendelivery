@@ -1,11 +1,11 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useOrders } from "@/hooks/useOrders";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import ClientLayout from "@/components/layout/ClientLayout";
 
@@ -23,7 +23,7 @@ interface CartItem extends MenuItem {
 
 const CardapioPage = () => {
   const { toast } = useToast();
-  const { createOrder } = useOrders();
+  const navigate = useNavigate();
   const { settings } = useCompanySettings();
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
 
@@ -97,39 +97,20 @@ const CardapioPage = () => {
     return carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
   };
 
-  const formatPhoneForWhatsApp = (phone: string) => {
-    const numericOnly = phone.replace(/\D/g, "");
-    if (numericOnly.length === 11 || numericOnly.length === 10) {
-      return `55${numericOnly}`;
-    }
-    return numericOnly;
-  };
-
-  const handleFazerPedidoWhatsApp = () => {
+  const handleFinalizarPedido = () => {
     if (carrinho.length === 0) {
       toast({
         title: "Carrinho vazio",
-        description: "Adicione itens ao carrinho antes de fazer o pedido",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!settings?.whatsapp_number) {
-      toast({
-        title: "Erro",
-        description: "Número do WhatsApp não configurado",
+        description: "Adicione itens ao carrinho antes de finalizar o pedido",
         variant: "destructive",
       });
       return;
     }
 
     const total = calcularTotal();
-    const deliveryFee = settings.delivery_fee || 0;
-    const totalComEntrega = total + deliveryFee;
-
+    
     // Verificar pedido mínimo
-    if (settings.minimum_order && total < settings.minimum_order) {
+    if (settings?.minimum_order && total < settings.minimum_order) {
       toast({
         title: "Pedido mínimo não atingido",
         description: `O valor mínimo para pedidos é R$ ${settings.minimum_order.toFixed(2)}`,
@@ -138,28 +119,16 @@ const CardapioPage = () => {
       return;
     }
 
-    // Montar mensagem do WhatsApp
-    const itensTexto = carrinho.map(item => 
-      `${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)}`
-    ).join('\n');
-
-    const mensagem = encodeURIComponent(
-      `🛒 *NOVO PEDIDO*\n\n` +
-      `📋 *Itens:*\n${itensTexto}\n\n` +
-      `💰 *Subtotal:* R$ ${total.toFixed(2)}\n` +
-      (deliveryFee > 0 ? `🚚 *Taxa de Entrega:* R$ ${deliveryFee.toFixed(2)}\n` : '') +
-      `💵 *Total:* R$ ${totalComEntrega.toFixed(2)}\n\n` +
-      `Gostaria de finalizar este pedido!`
-    );
-
-    // Abrir WhatsApp
-    const whatsappUrl = `https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}?text=${mensagem}`;
-    window.open(whatsappUrl, "_blank");
-
-    toast({
-      title: "Redirecionando para WhatsApp",
-      description: "Complete seu pedido pelo WhatsApp",
-    });
+    // Salvar carrinho no localStorage e redirecionar para checkout
+    const cartForCheckout = carrinho.map(item => ({
+      id: item.id,
+      name: item.nome,
+      price: item.preco,
+      quantity: item.quantidade
+    }));
+    
+    localStorage.setItem('cart', JSON.stringify(cartForCheckout));
+    navigate('/client/checkout');
   };
 
   const categorias = [...new Set(menuItems.map(item => item.categoria))];
@@ -170,7 +139,7 @@ const CardapioPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Menu */}
           <div className="lg:col-span-2">
-            <h1 className="text-3xl font-bold mb-6">Cardápio</h1>
+            <h1 className="text-3xl font-bold mb-6">Cardápio Online</h1>
             
             {categorias.map(categoria => (
               <div key={categoria} className="mb-8">
@@ -285,12 +254,12 @@ const CardapioPage = () => {
                     )}
 
                     <Button 
-                      onClick={handleFazerPedidoWhatsApp}
+                      onClick={handleFinalizarPedido}
                       className="w-full"
                       disabled={carrinho.length === 0 || (settings?.minimum_order && calcularTotal() < settings.minimum_order)}
                     >
                       <ShoppingCart className="mr-2 h-4 w-4" />
-                      Fazer Pedido via WhatsApp
+                      Finalizar Pedido
                     </Button>
                   </div>
                 )}
