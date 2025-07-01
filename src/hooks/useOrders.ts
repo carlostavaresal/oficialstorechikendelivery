@@ -65,7 +65,7 @@ export const useOrders = () => {
       const transformedOrders: Order[] = (data || []).map(row => ({
         ...row,
         items: Array.isArray(row.items) ? (row.items as unknown as OrderItem[]) : [],
-        notes: row.notes || undefined,
+        notes: row.notes || null,
         status: row.status as 'pending' | 'processing' | 'delivered' | 'cancelled'
       }));
       
