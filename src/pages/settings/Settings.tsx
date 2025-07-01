@@ -7,6 +7,7 @@ import MenuPreviewCard from "@/components/settings/MenuPreviewCard";
 import ThemeSettingsCard from "@/components/settings/ThemeSettingsCard";
 import PrinterSettingsCard from "@/components/settings/PrinterSettingsCard";
 import WhatsAppSettingsCard from "@/components/settings/WhatsAppSettingsCard";
+import OnlineMenuLinkCard from "@/components/settings/OnlineMenuLinkCard";
 
 const Settings = () => {
   return (
@@ -23,6 +24,7 @@ const Settings = () => {
         <div className="grid gap-6">
           <WhatsAppSettingsCard />
           <CompanyInformationCard />
+          <OnlineMenuLinkCard />
           <MenuPreviewCard />
           <ThemeSettingsCard />
           <PrinterSettingsCard />

@@ -1,7 +1,27 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Order, OrderItem } from '@/types/database';
+
+export interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  items: OrderItem[];
+  total_amount: number;
+  payment_method: string;
+  notes?: string | null;
+  status: 'pending' | 'processing' | 'delivered' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);

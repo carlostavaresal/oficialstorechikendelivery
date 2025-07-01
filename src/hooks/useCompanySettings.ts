@@ -1,7 +1,17 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CompanySettings } from '@/types/database';
+
+export interface CompanySettings {
+  id: string;
+  whatsapp_number: string;
+  company_name?: string | null;
+  company_address?: string | null;
+  delivery_fee?: number | null;
+  minimum_order?: number | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useCompanySettings = () => {
   const [settings, setSettings] = useState<CompanySettings | null>(null);

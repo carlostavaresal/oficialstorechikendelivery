@@ -1,13 +1,9 @@
 
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddressSetupCard from "@/components/delivery/AddressSetupCard";
+import DeliveryRadiusMap from "@/components/delivery/DeliveryRadiusMap";
 
 // Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
@@ -22,11 +18,9 @@ export interface BusinessAddress {
 
 const DeliveryAreas: React.FC = () => {
   const [businessAddress, setBusinessAddress] = useState<BusinessAddress | null>(null);
-  const [deliveryRadius, setDeliveryRadius] = useState<string>("5");
-  const [deliveryFee, setDeliveryFee] = useState<string>("5.00");
   const { toast } = useToast();
 
-  // Load business address and delivery settings when component mounts
+  // Load business address when component mounts
   useEffect(() => {
     try {
       const savedAddress = localStorage.getItem("businessAddress");
@@ -35,17 +29,6 @@ const DeliveryAreas: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading business address:", error);
-    }
-
-    try {
-      const savedSettings = localStorage.getItem("deliverySettings");
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setDeliveryRadius(settings.radius || "5");
-        setDeliveryFee(settings.fee || "5.00");
-      }
-    } catch (error) {
-      console.error("Error loading delivery settings:", error);
     }
   }, []);
 
@@ -56,19 +39,6 @@ const DeliveryAreas: React.FC = () => {
     }
   }, [businessAddress]);
 
-  // Save delivery settings
-  const handleSaveSettings = () => {
-    const settings = {
-      radius: deliveryRadius,
-      fee: deliveryFee,
-    };
-    localStorage.setItem("deliverySettings", JSON.stringify(settings));
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações de entrega foram salvas com sucesso.",
-    });
-  };
-
   // Handler for updating the business address
   const handleSetBusinessAddress = (address: BusinessAddress) => {
     setBusinessAddress(address);
@@ -78,10 +48,23 @@ const DeliveryAreas: React.FC = () => {
     });
   };
 
+  // Handler for saving delivery settings
+  const handleSaveDeliverySettings = (radius: string, fee: string) => {
+    toast({
+      title: "Configurações salvas",
+      description: `Raio de ${radius}km e taxa de R$ ${fee} foram salvos.`,
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 space-y-8">
-        <h1 className="text-3xl font-bold mb-6">Áreas de Entrega</h1>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Áreas de Entrega</h1>
+          <p className="text-muted-foreground">
+            Configure o endereço da sua empresa e defina o raio de entregas com as respectivas taxas.
+          </p>
+        </div>
         
         {/* Business Address Setup */}
         <AddressSetupCard
@@ -105,54 +88,11 @@ const DeliveryAreas: React.FC = () => {
           onAddressUpdate={handleSetBusinessAddress}
         />
 
-        {/* Simple Delivery Settings */}
-        {businessAddress && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuração de Entrega</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deliveryRadius">Raio de Entrega (km)</Label>
-                  <Input
-                    id="deliveryRadius"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={deliveryRadius}
-                    onChange={(e) => setDeliveryRadius(e.target.value)}
-                    placeholder="Ex: 5"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Distância máxima para entrega a partir do seu endereço
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deliveryFee">Taxa de Entrega (R$)</Label>
-                  <Input
-                    id="deliveryFee"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={deliveryFee}
-                    onChange={(e) => setDeliveryFee(e.target.value)}
-                    placeholder="Ex: 5.00"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Valor cobrado pela entrega dentro do raio configurado
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6">
-                <Button onClick={handleSaveSettings} className="flex items-center gap-2">
-                  <Save className="h-4 w-4" />
-                  Salvar Configurações de Entrega
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Delivery Radius Map */}
+        <DeliveryRadiusMap
+          address={businessAddress}
+          onSave={handleSaveDeliverySettings}
+        />
       </div>
     </DashboardLayout>
   );
