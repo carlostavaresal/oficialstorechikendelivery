@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ interface MenuItem {
   preco: number;
   descricao: string;
   categoria: string;
+  imagem?: string;
+  disponivel?: boolean;
 }
 
 interface CartItem extends MenuItem {
@@ -26,31 +28,74 @@ const CardapioPage = () => {
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Menu items de exemplo
-  const menuItems: MenuItem[] = [
-    {
-      id: "1",
-      nome: "Hambúrguer Clássico",
-      preco: 25.90,
-      descricao: "Pão, carne, queijo, alface, tomate",
-      categoria: "Hambúrgueres"
-    },
-    {
-      id: "2",
-      nome: "Pizza Margherita",
-      preco: 35.00,
-      descricao: "Molho de tomate, mussarela, manjericão",
-      categoria: "Pizzas"
-    },
-    {
-      id: "3",
-      nome: "Coca-Cola 350ml",
-      preco: 5.50,
-      descricao: "Refrigerante gelado",
-      categoria: "Bebidas"
-    }
-  ];
+  // Carregar produtos do localStorage
+  useEffect(() => {
+    const carregarProdutos = () => {
+      try {
+        const produtosSalvos = localStorage.getItem("products");
+        console.log('Produtos salvos no localStorage:', produtosSalvos);
+        
+        if (produtosSalvos) {
+          const produtos = JSON.parse(produtosSalvos);
+          console.log('Produtos parseados:', produtos);
+          
+          const produtosFormatados = produtos
+            .filter((produto: any) => produto.name && produto.price) // Filtrar produtos válidos
+            .map((produto: any) => {
+              // Processar a imagem corretamente
+              let imagemUrl = '';
+              
+              if (produto.image) {
+                if (typeof produto.image === 'string') {
+                  imagemUrl = produto.image;
+                } else if (typeof produto.image === 'object') {
+                  if (produto.image.value) {
+                    imagemUrl = produto.image.value;
+                  } else if (produto.image._type === 'String' && produto.image.value) {
+                    imagemUrl = produto.image.value;
+                  }
+                }
+              }
+              
+              return {
+                id: produto.id,
+                nome: produto.name || '',
+                descricao: produto.description || '',
+                preco: Number(produto.price) || 0,
+                categoria: produto.category || "Geral",
+                imagem: imagemUrl,
+                disponivel: true
+              };
+            });
+          
+          console.log('Produtos formatados para o cardápio:', produtosFormatados);
+          setMenuItems(produtosFormatados);
+        } else {
+          console.log('Nenhum produto encontrado no localStorage');
+          setMenuItems([]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        setMenuItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarProdutos();
+    
+    // Escutar atualizações de produtos
+    const handleProductsUpdate = () => {
+      console.log('Produtos atualizados, recarregando...');
+      carregarProdutos();
+    };
+
+    window.addEventListener("productsUpdated", handleProductsUpdate);
+    return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
+  }, []);
 
   const adicionarAoCarrinho = (item: MenuItem) => {
     setCarrinho(prevCarrinho => {
@@ -141,37 +186,62 @@ const CardapioPage = () => {
           <div className="lg:col-span-2">
             <h1 className="text-3xl font-bold mb-6">Cardápio Online</h1>
             
-            {categorias.map(categoria => (
-              <div key={categoria} className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">{categoria}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {menuItems
-                    .filter(item => item.categoria === categoria)
-                    .map(item => (
-                      <Card key={item.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg">{item.nome}</CardTitle>
-                            <Badge variant="secondary">
-                              R$ {item.preco.toFixed(2)}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground mb-4">{item.descricao}</p>
-                          <Button 
-                            onClick={() => adicionarAoCarrinho(item)}
-                            className="w-full"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Adicionar ao Carrinho
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Carregando cardápio...</p>
               </div>
-            ))}
+            ) : menuItems.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-muted-foreground mb-2">Cardápio em atualização</p>
+                <p className="text-muted-foreground">
+                  Não há produtos disponíveis no momento. Tente novamente em instantes.
+                </p>
+              </div>
+            ) : (
+              categorias.map(categoria => (
+                <div key={categoria} className="mb-8">
+                  <h2 className="text-2xl font-semibold mb-4">{categoria}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {menuItems
+                      .filter(item => item.categoria === categoria)
+                      .map(item => (
+                        <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                          {item.imagem && (
+                            <div className="relative pt-[60%]">
+                              <img
+                                src={item.imagem}
+                                alt={item.nome}
+                                className="absolute inset-0 h-full w-full object-cover rounded-t-lg"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-lg">{item.nome}</CardTitle>
+                              <Badge variant="secondary">
+                                R$ {item.preco.toFixed(2)}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">{item.descricao}</p>
+                            <Button 
+                              onClick={() => adicionarAoCarrinho(item)}
+                              className="w-full"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Adicionar ao Carrinho
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Carrinho */}
