@@ -7,19 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useProducts } from "@/hooks/useProducts";
 import ClientLayout from "@/components/layout/ClientLayout";
 
-interface MenuItem {
+interface CartItem {
   id: string;
   nome: string;
   preco: number;
   descricao: string;
   categoria: string;
   imagem?: string;
-  disponivel?: boolean;
-}
-
-interface CartItem extends MenuItem {
   quantidade: number;
 }
 
@@ -27,77 +24,21 @@ const CardapioPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { settings } = useCompanySettings();
+  const { products, loading } = useProducts();
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Carregar produtos do localStorage
-  useEffect(() => {
-    const carregarProdutos = () => {
-      try {
-        const produtosSalvos = localStorage.getItem("products");
-        console.log('Produtos salvos no localStorage:', produtosSalvos);
-        
-        if (produtosSalvos) {
-          const produtos = JSON.parse(produtosSalvos);
-          console.log('Produtos parseados:', produtos);
-          
-          const produtosFormatados = produtos
-            .filter((produto: any) => produto.name && produto.price) // Filtrar produtos válidos
-            .map((produto: any) => {
-              // Processar a imagem corretamente
-              let imagemUrl = '';
-              
-              if (produto.image) {
-                if (typeof produto.image === 'string') {
-                  imagemUrl = produto.image;
-                } else if (typeof produto.image === 'object') {
-                  if (produto.image.value) {
-                    imagemUrl = produto.image.value;
-                  } else if (produto.image._type === 'String' && produto.image.value) {
-                    imagemUrl = produto.image.value;
-                  }
-                }
-              }
-              
-              return {
-                id: produto.id,
-                nome: produto.name || '',
-                descricao: produto.description || '',
-                preco: Number(produto.price) || 0,
-                categoria: produto.category || "Geral",
-                imagem: imagemUrl,
-                disponivel: true
-              };
-            });
-          
-          console.log('Produtos formatados para o cardápio:', produtosFormatados);
-          setMenuItems(produtosFormatados);
-        } else {
-          console.log('Nenhum produto encontrado no localStorage');
-          setMenuItems([]);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
-        setMenuItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Transformar produtos do Supabase para o formato do cardápio
+  const menuItems = products.map(product => ({
+    id: product.id,
+    nome: product.name,
+    descricao: product.description || '',
+    preco: Number(product.price),
+    categoria: product.category || 'Geral',
+    imagem: product.image_url || '',
+    disponivel: product.is_available !== false
+  })).filter(item => item.disponivel);
 
-    carregarProdutos();
-    
-    // Escutar atualizações de produtos
-    const handleProductsUpdate = () => {
-      console.log('Produtos atualizados, recarregando...');
-      carregarProdutos();
-    };
-
-    window.addEventListener("productsUpdated", handleProductsUpdate);
-    return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
-  }, []);
-
-  const adicionarAoCarrinho = (item: MenuItem) => {
+  const adicionarAoCarrinho = (item: any) => {
     setCarrinho(prevCarrinho => {
       const itemExistente = prevCarrinho.find(cartItem => cartItem.id === item.id);
       

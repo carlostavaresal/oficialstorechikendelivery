@@ -18,6 +18,7 @@ import History from "./pages/history/History.tsx";
 import Login from "./pages/auth/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Catalog from "./pages/client/Catalog.tsx";
+import CardapioPage from "./pages/client/CardapioPage.tsx";
 import Checkout from "./pages/client/Checkout.tsx";
 import Success from "./pages/client/Success.tsx";
 import OnlineMenu from "./pages/menu/OnlineMenu.tsx";
@@ -140,7 +141,7 @@ const router = createBrowserRouter([
       },
       {
         path: "client",
-        element: <Catalog />,
+        element: <CardapioPage />,
       },
       {
         path: "client/catalog",
