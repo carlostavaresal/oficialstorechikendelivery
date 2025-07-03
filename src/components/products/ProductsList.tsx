@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import ProductCard from "./ProductCard";
+import { useProducts } from "@/hooks/useProducts";
 
 export interface Product {
   id: string;
@@ -13,34 +14,61 @@ export interface Product {
 }
 
 const ProductsList = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { products, loading } = useProducts();
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    // Load products from localStorage
-    const loadProducts = () => {
+    // Se não há produtos no Supabase, carregar do localStorage como fallback
+    if (!loading && products.length === 0) {
       const savedProducts = localStorage.getItem("products");
       if (savedProducts) {
-        setProducts(JSON.parse(savedProducts));
+        const parsedProducts = JSON.parse(savedProducts);
+        const formattedProducts = parsedProducts.map((product: any) => {
+          let imageUrl = '';
+          
+          // Processar a imagem corretamente
+          if (product.image) {
+            if (typeof product.image === 'string') {
+              imageUrl = product.image;
+            } else if (typeof product.image === 'object') {
+              if (product.image.value) {
+                imageUrl = product.image.value;
+              } else if (product.image._type === 'String' && product.image.value) {
+                imageUrl = product.image.value;
+              }
+            }
+          }
+          
+          return {
+            id: product.id,
+            name: product.name || '',
+            description: product.description || '',
+            price: Number(product.price) || 0,
+            category: product.category || "Geral",
+            image: imageUrl
+          };
+        });
+        setLocalProducts(formattedProducts);
       }
-      setIsLoading(false);
-    };
+    }
+  }, [products, loading]);
 
-    loadProducts();
+  // Usar produtos do Supabase se disponíveis, senão usar do localStorage
+  const displayProducts = products.length > 0 ? 
+    products.map(product => ({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      description: product.description || '',
+      image: product.image_url || '',
+      category: product.category || 'Geral'
+    })) : localProducts;
 
-    // Set up an event listener to update the products list when products are added/edited/deleted
-    window.addEventListener("productsUpdated", loadProducts);
-    
-    return () => {
-      window.removeEventListener("productsUpdated", loadProducts);
-    };
-  }, []);
-
-  if (isLoading) {
+  if (loading) {
     return <p>Carregando produtos...</p>;
   }
 
-  if (products.length === 0) {
+  if (displayProducts.length === 0) {
     return (
       <Card className="flex h-40 items-center justify-center text-center">
         <div className="p-6">
@@ -55,7 +83,7 @@ const ProductsList = () => {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
+      {displayProducts.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>

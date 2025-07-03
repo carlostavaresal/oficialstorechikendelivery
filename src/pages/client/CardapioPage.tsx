@@ -26,17 +26,78 @@ const CardapioPage = () => {
   const { settings } = useCompanySettings();
   const { products, loading } = useProducts();
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
 
-  // Transformar produtos do Supabase para o formato do cardápio
-  const menuItems = products.map(product => ({
-    id: product.id,
-    nome: product.name,
-    descricao: product.description || '',
-    preco: Number(product.price),
-    categoria: product.category || 'Geral',
-    imagem: product.image_url || '',
-    disponivel: product.is_available !== false
-  })).filter(item => item.disponivel);
+  // Processar produtos do Supabase ou localStorage
+  useEffect(() => {
+    const processProducts = () => {
+      console.log('CardapioPage - Produtos do Supabase:', products);
+      
+      if (products.length > 0) {
+        // Usar produtos do Supabase
+        const items = products.map(product => ({
+          id: product.id,
+          nome: product.name,
+          descricao: product.description || '',
+          preco: Number(product.price),
+          categoria: product.category || 'Geral',
+          imagem: product.image_url || '',
+          disponivel: product.is_available !== false
+        })).filter(item => item.disponivel);
+        
+        setMenuItems(items);
+        console.log('CardapioPage - Items do Supabase processados:', items);
+      } else if (!loading) {
+        // Fallback para localStorage
+        const savedProducts = localStorage.getItem("products");
+        console.log('CardapioPage - Produtos do localStorage:', savedProducts);
+        
+        if (savedProducts) {
+          const products = JSON.parse(savedProducts);
+          const items = products.map((product: any) => {
+            let imageUrl = '';
+            
+            if (product.image) {
+              if (typeof product.image === 'string') {
+                imageUrl = product.image;
+              } else if (typeof product.image === 'object') {
+                if (product.image.value) {
+                  imageUrl = product.image.value;
+                } else if (product.image._type === 'String' && product.image.value) {
+                  imageUrl = product.image.value;
+                }
+              }
+            }
+            
+            return {
+              id: product.id,
+              nome: product.name || '',
+              descricao: product.description || '',
+              preco: Number(product.price) || 0,
+              categoria: product.category || 'Geral',
+              imagem: imageUrl,
+              disponivel: true
+            };
+          }).filter((item: any) => item.disponivel);
+          
+          setMenuItems(items);
+          console.log('CardapioPage - Items do localStorage processados:', items);
+        }
+      }
+    };
+
+    processProducts();
+
+    // Listener para atualizar quando produtos localStorage mudarem
+    const handleProductsUpdate = () => {
+      if (products.length === 0) {
+        processProducts();
+      }
+    };
+
+    window.addEventListener("productsUpdated", handleProductsUpdate);
+    return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
+  }, [products, loading]);
 
   const adicionarAoCarrinho = (item: any) => {
     setCarrinho(prevCarrinho => {
@@ -119,6 +180,9 @@ const CardapioPage = () => {
 
   const categorias = [...new Set(menuItems.map(item => item.categoria))];
 
+  console.log('CardapioPage - Menu items final:', menuItems);
+  console.log('CardapioPage - Categorias:', categorias);
+
   return (
     <ClientLayout>
       <div className="container mx-auto px-4 py-8">
@@ -154,6 +218,7 @@ const CardapioPage = () => {
                                 alt={item.nome}
                                 className="absolute inset-0 h-full w-full object-cover rounded-t-lg"
                                 onError={(e) => {
+                                  console.log('Erro ao carregar imagem no cardápio:', item.imagem);
                                   e.currentTarget.style.display = 'none';
                                 }}
                               />

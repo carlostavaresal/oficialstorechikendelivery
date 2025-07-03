@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { useProducts } from "@/hooks/useProducts";
 
 interface MenuItem {
   id: string;
@@ -41,49 +42,8 @@ interface Category {
 const OnlineMenu: React.FC = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const [items, setItems] = useState<MenuItem[]>(() => {
-    const savedProducts = localStorage.getItem("products");
-    console.log('Produtos salvos no localStorage:', savedProducts);
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      console.log('Produtos parseados:', products);
-      return products.map((product: any) => {
-        // Processar a imagem corretamente
-        let imageUrl = '';
-        
-        if (product.image) {
-          if (typeof product.image === 'string') {
-            imageUrl = product.image;
-          } else if (typeof product.image === 'object') {
-            if (product.image.value) {
-              imageUrl = product.image.value;
-            } else if (product.image._type === 'String' && product.image.value) {
-              imageUrl = product.image.value;
-            }
-          }
-        }
-        
-        console.log('Produto processado:', {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          description: product.description,
-          imageUrl: imageUrl
-        });
-        
-        return {
-          id: product.id,
-          name: product.name || '',
-          description: product.description || '',
-          price: Number(product.price) || 0,
-          category: product.category || "Geral",
-          isAvailable: true,
-          imageUrl: imageUrl
-        };
-      });
-    }
-    return [];
-  });
+  const { products, loading } = useProducts();
+  const [items, setItems] = useState<MenuItem[]>([]);
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const savedCategories = localStorage.getItem("menuCategories");
@@ -92,52 +52,80 @@ const OnlineMenu: React.FC = () => {
       : [{ id: "1", name: "Geral" }];
   });
 
-  // Update items when products change
-  React.useEffect(() => {
-    const handleProductsUpdate = () => {
-      const savedProducts = localStorage.getItem("products");
-      console.log('Atualizando produtos:', savedProducts);
-      if (savedProducts) {
-        const products = JSON.parse(savedProducts);
-        const updatedItems = products.map((product: any) => {
-          // Processar a imagem corretamente
-          let imageUrl = '';
-          
-          if (product.image) {
-            if (typeof product.image === 'string') {
-              imageUrl = product.image;
-            } else if (typeof product.image === 'object') {
-              if (product.image.value) {
-                imageUrl = product.image.value;
-              } else if (product.image._type === 'String' && product.image.value) {
-                imageUrl = product.image.value;
+  // Processar produtos do Supabase ou localStorage
+  useEffect(() => {
+    const processProducts = () => {
+      console.log('Processando produtos:', products);
+      
+      if (products.length > 0) {
+        // Usar produtos do Supabase
+        const formattedItems = products.map((product) => ({
+          id: product.id,
+          name: product.name || '',
+          description: product.description || '',
+          price: Number(product.price) || 0,
+          category: product.category || "Geral",
+          isAvailable: product.is_available !== false,
+          imageUrl: product.image_url || ''
+        }));
+        setItems(formattedItems);
+        console.log('Items do Supabase:', formattedItems);
+      } else if (!loading) {
+        // Fallback para localStorage se não houver produtos no Supabase
+        const savedProducts = localStorage.getItem("products");
+        console.log('Produtos do localStorage:', savedProducts);
+        
+        if (savedProducts) {
+          const products = JSON.parse(savedProducts);
+          const updatedItems = products.map((product: any) => {
+            let imageUrl = '';
+            
+            if (product.image) {
+              if (typeof product.image === 'string') {
+                imageUrl = product.image;
+              } else if (typeof product.image === 'object') {
+                if (product.image.value) {
+                  imageUrl = product.image.value;
+                } else if (product.image._type === 'String' && product.image.value) {
+                  imageUrl = product.image.value;
+                }
               }
             }
-          }
-          
-          return {
-            id: product.id,
-            name: product.name || '',
-            description: product.description || '',
-            price: Number(product.price) || 0,
-            category: product.category || "Geral",
-            isAvailable: true,
-            imageUrl: imageUrl
-          };
-        });
-        setItems(updatedItems);
-        console.log('Items atualizados:', updatedItems);
+            
+            return {
+              id: product.id,
+              name: product.name || '',
+              description: product.description || '',
+              price: Number(product.price) || 0,
+              category: product.category || "Geral",
+              isAvailable: true,
+              imageUrl: imageUrl
+            };
+          });
+          setItems(updatedItems);
+          console.log('Items do localStorage processados:', updatedItems);
+        }
       }
     };
 
-    handleProductsUpdate();
+    processProducts();
+
+    // Listener para atualizar quando produtos localStorage mudarem
+    const handleProductsUpdate = () => {
+      if (products.length === 0) {
+        processProducts();
+      }
+    };
+
     window.addEventListener("productsUpdated", handleProductsUpdate);
     return () => window.removeEventListener("productsUpdated", handleProductsUpdate);
-  }, []);
+  }, [products, loading]);
 
   // Save to localStorage whenever items change
-  React.useEffect(() => {
-    localStorage.setItem("menuItems", JSON.stringify(items));
+  useEffect(() => {
+    if (items.length > 0) {
+      localStorage.setItem("menuItems", JSON.stringify(items));
+    }
   }, [items]);
 
   const handleToggleItemAvailability = (id: string) => {
@@ -208,6 +196,9 @@ const OnlineMenu: React.FC = () => {
   const availableItems = items.filter(item => item.isAvailable);
   const menuUrl = `${window.location.origin}/client`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
+
+  console.log('Total de items:', items.length);
+  console.log('Items disponíveis:', availableItems.length);
 
   return (
     <DashboardLayout>
@@ -293,7 +284,11 @@ const OnlineMenu: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {items.length === 0 ? (
+            {loading ? (
+              <div className="text-center p-12 text-muted-foreground">
+                <p className="text-xl mb-2">Carregando produtos...</p>
+              </div>
+            ) : items.length === 0 ? (
               <div className="text-center p-12 text-muted-foreground">
                 <p className="text-xl mb-2">Nenhum produto cadastrado</p>
                 <p className="text-sm">
