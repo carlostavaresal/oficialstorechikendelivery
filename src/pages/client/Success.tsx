@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, ShoppingCart } from "lucide-react";
+import { CheckCheck, ShoppingCart, ArrowLeft } from "lucide-react";
 import ClientLayout from "@/components/layout/ClientLayout";
 
 const Success = () => {
@@ -34,6 +34,11 @@ const Success = () => {
           
           <div className="space-y-4">
             <Button onClick={() => navigate('/client')} className="w-full">
+              <ArrowLeft className="mr-2" />
+              Voltar ao Cardápio
+            </Button>
+            
+            <Button onClick={() => navigate('/client')} variant="outline" className="w-full">
               <ShoppingCart className="mr-2" />
               Fazer Novo Pedido
             </Button>
