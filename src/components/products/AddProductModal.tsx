@@ -11,6 +11,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FileImage, UploadCloud } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useProducts } from "@/hooks/useProducts";
 
 // Define the form schema with validation
 const productSchema = z.object({
@@ -27,8 +28,10 @@ interface AddProductModalProps {
 
 const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
+  const { createProduct } = useProducts();
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const imageRef = React.useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -69,7 +72,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
     }
   };
 
-  const onSubmit = (values: z.infer<typeof productSchema>) => {
+  const onSubmit = async (values: z.infer<typeof productSchema>) => {
     if (!imagePreview) {
       toast({
         title: "Imagem obrigatória",
@@ -79,39 +82,41 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
       return;
     }
 
-    // Get current products from localStorage
-    const savedProducts = localStorage.getItem("products");
-    const products = savedProducts ? JSON.parse(savedProducts) : [];
-    
-    // Add new product
-    const newProduct = {
-      id: Date.now().toString(),
-      name: values.name,
-      price: values.price,
-      description: values.description,
-      category: values.category,
-      image: imagePreview,
-    };
-    
-    products.push(newProduct);
-    
-    // Save back to localStorage
-    localStorage.setItem("products", JSON.stringify(products));
-    
-    // Dispatch an event to notify that products have been updated
-    window.dispatchEvent(new Event("productsUpdated"));
-    
-    // Reset form
-    form.reset();
-    setImagePreview(null);
-    
-    // Close modal
-    onOpenChange(false);
-    
-    toast({
-      title: "Produto adicionado",
-      description: `${values.name} foi adicionado com sucesso.`,
-    });
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      // Create product using Supabase
+      await createProduct({
+        name: values.name,
+        price: values.price,
+        description: values.description,
+        category: values.category,
+        image_url: imagePreview,
+        is_available: true
+      });
+      
+      // Reset form
+      form.reset();
+      setImagePreview(null);
+      
+      // Close modal
+      onOpenChange(false);
+      
+      toast({
+        title: "Produto adicionado",
+        description: `${values.name} foi adicionado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Erro ao adicionar produto",
+        description: "Ocorreu um erro ao tentar adicionar o produto. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -237,7 +242,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Produto</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : "Salvar Produto"}
+              </Button>
             </div>
           </form>
         </Form>
