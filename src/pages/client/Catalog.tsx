@@ -32,7 +32,10 @@ const Catalog: React.FC = () => {
     // Load products from localStorage
     const savedProducts = localStorage.getItem("products");
     if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
+      const parsedProducts = JSON.parse(savedProducts);
+      // Filter only available products
+      const availableProducts = parsedProducts.filter((product: Product) => product.is_available !== false);
+      setProducts(availableProducts);
     }
     setIsLoading(false);
   }, []);

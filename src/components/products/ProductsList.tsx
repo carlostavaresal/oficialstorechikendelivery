@@ -11,6 +11,7 @@ export interface Product {
   description: string;
   image: string;
   category: string;
+  is_available?: boolean;
 }
 
 const ProductsList = () => {
@@ -45,7 +46,8 @@ const ProductsList = () => {
             description: product.description || '',
             price: Number(product.price) || 0,
             category: product.category || "Geral",
-            image: imageUrl
+            image: imageUrl,
+            is_available: product.is_available !== false
           };
         });
         setLocalProducts(formattedProducts);

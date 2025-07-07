@@ -111,17 +111,23 @@ const Checkout = () => {
         const deliveryFee = settings.delivery_fee || 0;
         const total = calculateTotal();
         
+        const paymentDisplayName = {
+          pix: 'PIX',
+          money: 'Dinheiro',
+          card: 'Cartão'
+        }[paymentMethod] || paymentMethod;
+        
         const message = encodeURIComponent(
           `🛒 *NOVO PEDIDO* - ${newOrder.order_number}\n\n` +
           `👤 *Cliente:* ${name}\n` +
           `📱 *Telefone:* ${phone}\n` +
           `📍 *Endereço:* ${address}\n\n` +
           `📋 *Itens:*\n${orderItems}\n\n` +
-          `💳 *Pagamento:* ${paymentMethod}\n` +
+          `💳 *Pagamento:* ${paymentDisplayName}\n` +
           (deliveryFee > 0 ? `🚚 *Taxa de Entrega:* R$ ${deliveryFee.toFixed(2)}\n` : '') +
           `💰 *Total:* R$ ${total.toFixed(2)}\n\n` +
           (notes ? `📝 *Observações:* ${notes}\n\n` : '') +
-          `Confirmar este pedido?`
+          `✅ *Confirme este pedido para iniciar o preparo!*`
         );
         
         window.open(`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}?text=${message}`, "_blank");

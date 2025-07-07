@@ -9,12 +9,9 @@ const Success = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if we should be on this page (if there's no recent order)
-    const orders = localStorage.getItem('orders');
-    if (!orders) {
-      navigate('/client');
-    }
-  }, [navigate]);
+    // Clear any residual cart data to ensure clean state
+    localStorage.removeItem('cart');
+  }, []);
   
   return (
     <ClientLayout>
