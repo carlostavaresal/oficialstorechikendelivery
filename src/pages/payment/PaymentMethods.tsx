@@ -10,7 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { HomeIcon, CreditCard, Banknote, Coins } from "lucide-react";
+import { HomeIcon, CreditCard, Banknote } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import PaymentMethodDisplay from "@/components/payment/PaymentMethodDisplay";
@@ -76,13 +76,6 @@ const PaymentMethods: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex items-center p-3 border rounded-md">
-                <Coins className="h-5 w-5 text-primary mr-3" />
-                <div>
-                  <h3 className="font-medium">PIX</h3>
-                  <p className="text-sm text-muted-foreground">Pagamento instantâneo via PIX</p>
-                </div>
-              </div>
               
               <div className="flex items-center p-3 border rounded-md">
                 <CreditCard className="h-5 w-5 text-primary mr-3" />

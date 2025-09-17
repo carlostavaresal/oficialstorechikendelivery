@@ -16,7 +16,7 @@ export const useCustomerNotifications = () => {
     if (!order.customer_phone) return;
 
     const itemsList = order.items.map((item: any) => 
-      `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
+      `${item.quantity}x ${item.name} - € ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const message = `✅ *PEDIDO CONFIRMADO* - ${order.order_number}
@@ -26,7 +26,7 @@ Olá ${order.customer_name}! Seu pedido foi confirmado com sucesso.
 📋 *Resumo do Pedido:*
 ${itemsList}
 
-💰 *Total:* R$ ${order.total_amount.toFixed(2)}
+💰 *Total:* € ${order.total_amount.toFixed(2)}
 💳 *Pagamento:* ${order.payment_method}
 
 📍 *Endereço de Entrega:*
@@ -57,7 +57,7 @@ Seu pedido saiu para entrega e chegará em breve! 🎉
 
 📋 *Pedido:* ${order.order_number}
 📍 *Endereço:* ${order.customer_address}
-💰 *Total:* R$ ${order.total_amount.toFixed(2)}
+💰 *Total:* € ${order.total_amount.toFixed(2)}
 
 ⏰ *Previsão de chegada:* 15-20 minutos
 

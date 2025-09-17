@@ -91,7 +91,7 @@ const OrdersTable: React.FC<{ orders: any[], onOpenOrder: (order: any) => void }
                       {getStatusLabel(order.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell>€ {order.total_amount.toFixed(2)}</TableCell>
                   <TableCell>
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>
@@ -143,7 +143,7 @@ const History: React.FC = () => {
       id: order.order_number,
       customer: order.customer_name,
       status: order.status,
-      total: `R$ ${order.total_amount.toFixed(2)}`,
+      total: `€ ${order.total_amount.toFixed(2)}`,
       date: new Date(order.created_at),
       items: order.items.length,
       address: order.customer_address,

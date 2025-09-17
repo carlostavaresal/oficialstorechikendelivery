@@ -125,7 +125,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
     
     toast({
       title: "Configurações salvas",
-      description: `Raio de ${deliveryRadius}km, taxa de R$ ${deliveryFee} e tempo de ${estimatedTime} min salvos.`,
+      description: `Raio de ${deliveryRadius}km, taxa de € ${deliveryFee} e tempo de ${estimatedTime} min salvos.`,
     });
   };
 
@@ -240,7 +240,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
                   <span className="text-xs text-blue-700">Área de Entrega: {deliveryRadius}km</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-blue-700">Taxa: R$ {deliveryFee}</span>
+                  <span className="text-xs text-blue-700">Taxa: € {deliveryFee}</span>
                 </div>
               </div>
             </div>
@@ -269,7 +269,7 @@ const DeliveryRadiusMap: React.FC<DeliveryRadiusMapProps> = ({ address, onSave }
               <div className="space-y-2">
                 <Label htmlFor="deliveryFee" className="flex items-center gap-1">
                   <DollarSign className="h-3 w-3" />
-                  Taxa de Entrega (R$)
+                  Taxa de Entrega (€)
                 </Label>
                 <Input
                   id="deliveryFee"

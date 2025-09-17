@@ -160,7 +160,7 @@ const CardapioPage = () => {
     if (settings?.minimum_order && total < settings.minimum_order) {
       toast({
         title: "Pedido mínimo não atingido",
-        description: `O valor mínimo para pedidos é R$ ${settings.minimum_order.toFixed(2)}`,
+        description: `O valor mínimo para pedidos é € ${settings.minimum_order.toFixed(2)}`,
         variant: "destructive",
       });
       return;
@@ -228,7 +228,7 @@ const CardapioPage = () => {
                             <div className="flex justify-between items-start">
                               <CardTitle className="text-lg">{item.nome}</CardTitle>
                               <Badge variant="secondary">
-                                R$ {item.preco.toFixed(2)}
+                                € {item.preco.toFixed(2)}
                               </Badge>
                             </div>
                           </CardHeader>
@@ -271,7 +271,7 @@ const CardapioPage = () => {
                         <div className="flex-1">
                           <h4 className="font-medium">{item.nome}</h4>
                           <p className="text-sm text-muted-foreground">
-                            R$ {item.preco.toFixed(2)} cada
+                            € {item.preco.toFixed(2)} cada
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -304,27 +304,27 @@ const CardapioPage = () => {
                     <div className="border-t pt-4">
                       <div className="flex justify-between mb-2">
                         <span>Subtotal:</span>
-                        <span>R$ {calcularTotal().toFixed(2)}</span>
+                        <span>€ {calcularTotal().toFixed(2)}</span>
                       </div>
                       {settings?.delivery_fee && settings.delivery_fee > 0 && (
                         <div className="flex justify-between mb-2">
                           <span>Taxa de Entrega:</span>
-                          <span>R$ {settings.delivery_fee.toFixed(2)}</span>
+                          <span>€ {settings.delivery_fee.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total:</span>
-                        <span>R$ {(calcularTotal() + (settings?.delivery_fee || 0)).toFixed(2)}</span>
+                        <span>€ {(calcularTotal() + (settings?.delivery_fee || 0)).toFixed(2)}</span>
                       </div>
                     </div>
 
                     {settings?.minimum_order && calcularTotal() < settings.minimum_order && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
                         <p className="text-yellow-800">
-                          Pedido mínimo: R$ {settings.minimum_order.toFixed(2)}
+                          Pedido mínimo: € {settings.minimum_order.toFixed(2)}
                         </p>
                         <p className="text-yellow-600">
-                          Faltam R$ {(settings.minimum_order - calcularTotal()).toFixed(2)}
+                          Faltam € {(settings.minimum_order - calcularTotal()).toFixed(2)}
                         </p>
                       </div>
                     )}

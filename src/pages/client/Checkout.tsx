@@ -69,7 +69,7 @@ const Checkout = () => {
     if (subtotal < minimumOrder) {
       toast({
         title: "Pedido mínimo não atingido",
-        description: `O valor mínimo para pedidos é R$ ${minimumOrder.toFixed(2)}`,
+        description: `O valor mínimo para pedidos é € ${minimumOrder.toFixed(2)}`,
         variant: "destructive",
       });
       return;
@@ -105,16 +105,15 @@ const Checkout = () => {
       // Send to WhatsApp if number is configured
       if (settings?.whatsapp_number && newOrder) {
         const orderItems = cart.map(item => 
-          `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
+          `${item.quantity}x ${item.name} - € ${(item.price * item.quantity).toFixed(2)}`
         ).join('\n');
         
         const deliveryFee = settings.delivery_fee || 0;
         const total = calculateTotal();
         
         const paymentDisplayName = {
-          pix: 'PIX',
-          money: 'Dinheiro',
-          card: 'Cartão'
+          credit: 'Cartão de Crédito',
+          cash: 'Dinheiro'
         }[paymentMethod] || paymentMethod;
         
         const message = encodeURIComponent(
@@ -124,8 +123,8 @@ const Checkout = () => {
           `📍 *Endereço:* ${address}\n\n` +
           `📋 *Itens:*\n${orderItems}\n\n` +
           `💳 *Pagamento:* ${paymentDisplayName}\n` +
-          (deliveryFee > 0 ? `🚚 *Taxa de Entrega:* R$ ${deliveryFee.toFixed(2)}\n` : '') +
-          `💰 *Total:* R$ ${total.toFixed(2)}\n\n` +
+          (deliveryFee > 0 ? `🚚 *Taxa de Entrega:* € ${deliveryFee.toFixed(2)}\n` : '') +
+          `💰 *Total:* € ${total.toFixed(2)}\n\n` +
           (notes ? `📝 *Observações:* ${notes}\n\n` : '') +
           `✅ *Confirme este pedido para iniciar o preparo!*`
         );
@@ -219,7 +218,7 @@ const Checkout = () => {
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Ex: Sem cebola, troco para R$ 50,00, etc."
+                    placeholder="Ex: Sem cebola, troco para € 50,00, etc."
                     disabled={isSubmitting}
                   />
                 </div>
@@ -255,7 +254,7 @@ const Checkout = () => {
                       <span>
                         {item.quantity}x {item.name}
                       </span>
-                      <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                      <span>€ {(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   
@@ -263,13 +262,13 @@ const Checkout = () => {
                   
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>R$ {subtotal.toFixed(2)}</span>
+                    <span>€ {subtotal.toFixed(2)}</span>
                   </div>
                   
                   {deliveryFee > 0 && (
                     <div className="flex justify-between">
                       <span>Taxa de Entrega</span>
-                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                      <span>€ {deliveryFee.toFixed(2)}</span>
                     </div>
                   )}
                   
@@ -277,7 +276,7 @@ const Checkout = () => {
                   
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {total.toFixed(2)}</span>
+                    <span>€ {total.toFixed(2)}</span>
                   </div>
                   
                   <Separator />
@@ -285,7 +284,7 @@ const Checkout = () => {
                   <div className="text-sm text-muted-foreground">
                     <p>* Campos obrigatórios</p>
                     {settings?.minimum_order && settings.minimum_order > 0 && (
-                      <p className="mt-1">Pedido mínimo: R$ {settings.minimum_order.toFixed(2)}</p>
+                      <p className="mt-1">Pedido mínimo: € {settings.minimum_order.toFixed(2)}</p>
                     )}
                     <p className="mt-2">Após finalizar o pedido, entraremos em contato para confirmar os detalhes.</p>
                   </div>

@@ -7,9 +7,9 @@ export function formatCurrency(value: string | number): string {
     return value; // Return as is if already formatted
   }
   
-  return new Intl.NumberFormat("pt-BR", {
+  return new Intl.NumberFormat("de-DE", {
     style: "currency",
-    currency: "BRL",
+    currency: "EUR",
   }).format(value);
 }
 

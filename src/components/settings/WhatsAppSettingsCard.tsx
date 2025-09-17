@@ -132,7 +132,7 @@ const WhatsAppSettingsCard = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="delivery_fee">Taxa de Entrega (R$)</Label>
+            <Label htmlFor="delivery_fee">Taxa de Entrega (€)</Label>
             <Input
               id="delivery_fee"
               type="number"
@@ -145,7 +145,7 @@ const WhatsAppSettingsCard = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="minimum_order">Pedido Mínimo (R$)</Label>
+            <Label htmlFor="minimum_order">Pedido Mínimo (€)</Label>
             <Input
               id="minimum_order"
               type="number"

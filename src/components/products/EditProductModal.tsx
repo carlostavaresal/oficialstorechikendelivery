@@ -147,7 +147,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormLabel>Preço (€)</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 

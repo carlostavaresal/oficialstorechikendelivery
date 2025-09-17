@@ -170,8 +170,8 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
   };
 
   const orderItems = order.orderItems || [
-    { name: "Item do pedido", quantity: 1, price: "R$ 25,00" },
-    { name: "Item adicional", quantity: 2, price: "R$ 15,00" },
+    { name: "Item do pedido", quantity: 1, price: "€ 25,00" },
+    { name: "Item adicional", quantity: 2, price: "€ 15,00" },
   ];
 
   return (

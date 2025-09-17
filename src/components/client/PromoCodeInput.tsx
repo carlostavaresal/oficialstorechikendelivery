@@ -121,7 +121,7 @@ const PromoCodeInput: React.FC<PromoCodeInputProps> = ({ onApply }) => {
       title: "Código aplicado",
       description: promo.type === "percentage" ? 
         `Desconto de ${promo.discount}% aplicado` : 
-        `Desconto de R$ ${promo.discount.toFixed(2)} aplicado`,
+        `Desconto de € ${promo.discount.toFixed(2)} aplicado`,
     });
   };
 
@@ -151,7 +151,7 @@ const PromoCodeInput: React.FC<PromoCodeInputProps> = ({ onApply }) => {
             <span className="ml-2 text-xs text-muted-foreground">
               {appliedCode?.type === "percentage" ? 
                 `${appliedCode.discount}% de desconto` : 
-                `R$ ${appliedCode.discount.toFixed(2)} de desconto`}
+                `€ ${appliedCode.discount.toFixed(2)} de desconto`}
             </span>
           </div>
           <Button variant="ghost" size="sm" onClick={removePromoCode}>

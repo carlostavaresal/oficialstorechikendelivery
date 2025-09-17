@@ -148,7 +148,7 @@ const PromotionalCodes = () => {
                       <TableCell>
                         {promo.type === "percentage"
                           ? `${promo.discount}%`
-                          : `R$ ${promo.discount.toFixed(2)}`}
+                          : `€ ${promo.discount.toFixed(2)}`}
                       </TableCell>
                       <TableCell>
                         {promo.expiresAt

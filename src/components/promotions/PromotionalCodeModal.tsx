@@ -140,7 +140,7 @@ const PromotionalCodeModal: React.FC<PromotionalCodeModalProps> = ({
               className="p-2 border rounded"
             >
               <option value="percentage">%</option>
-              <option value="fixed">R$</option>
+              <option value="fixed">€</option>
             </select>
           </div>
 

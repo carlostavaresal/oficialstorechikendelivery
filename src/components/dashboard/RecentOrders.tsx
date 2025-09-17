@@ -70,7 +70,7 @@ const RecentOrders: React.FC = () => {
       id: order.order_number,
       customer: order.customer_name,
       status: order.status,
-      total: `R$ ${order.total_amount.toFixed(2)}`,
+      total: `€ ${order.total_amount.toFixed(2)}`,
       date: new Date(order.created_at),
       items: order.items.length,
       address: order.customer_address,
@@ -202,7 +202,7 @@ const RecentOrders: React.FC = () => {
                       {getStatusLabel(order.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium">R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium">€ {order.total_amount.toFixed(2)}</TableCell>
                   <TableCell className="text-sm">
                     {formatDistanceToNowLocalized(new Date(order.created_at))}
                   </TableCell>

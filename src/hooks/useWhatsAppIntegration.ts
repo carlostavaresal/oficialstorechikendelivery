@@ -27,7 +27,7 @@ export const useWhatsAppIntegration = () => {
     }
 
     const itemsList = order.items.map((item: any) => 
-      `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`
+      `${item.quantity}x ${item.name} - € ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const message = `🍕 *NOVO PEDIDO* - ${order.order_number}
@@ -39,7 +39,7 @@ export const useWhatsAppIntegration = () => {
 📝 *Itens:*
 ${itemsList}
 
-💰 *Total:* R$ ${order.total_amount.toFixed(2)}
+💰 *Total:* € ${order.total_amount.toFixed(2)}
 💳 *Pagamento:* ${order.payment_method}
 ${order.notes ? `📋 *Observações:* ${order.notes}` : ''}
 

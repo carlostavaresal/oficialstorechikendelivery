@@ -110,7 +110,7 @@ const DeliveryZoneModal: React.FC<DeliveryZoneModalProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="fee" className="text-right">
-              Taxa (R$)
+              Taxa (€)
             </Label>
             <Input
               id="fee"
