@@ -13,6 +13,7 @@ import {
   Lock,
   BookOpen,
   BadgePercent,
+  Database,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Configurações", path: "/settings", icon: Settings },
     { name: "Tema", path: "/settings/theme", icon: Palette },
     { name: "Segurança", path: "/security", icon: Lock },
+    { name: "Backup", path: "/backup", icon: Database },
   ];
 
   return (

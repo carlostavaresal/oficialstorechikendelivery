@@ -23,7 +23,6 @@ const PaymentMethodDisplay: React.FC<PaymentMethodDisplayProps> = ({
   const getPaymentMethodLabel = (method: PaymentMethod): string => {
     switch (method) {
       case "cash": return "Dinheiro";
-      case "pix": return "Pix";
       case "credit": return "Cartão de Crédito";
       default: return "Desconhecido";
     }

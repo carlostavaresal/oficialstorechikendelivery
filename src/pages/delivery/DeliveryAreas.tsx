@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import AddressSetupCard from "@/components/delivery/AddressSetupCard";
 import DeliveryRadiusMap from "@/components/delivery/DeliveryRadiusMap";
+import GoogleMapsLink from "@/components/delivery/GoogleMapsLink";
 
 // Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
@@ -52,7 +53,7 @@ const DeliveryAreas: React.FC = () => {
   const handleSaveDeliverySettings = (radius: string, fee: string) => {
     toast({
       title: "Configurações salvas",
-      description: `Raio de ${radius}km e taxa de R$ ${fee} foram salvos.`,
+      description: `Raio de ${radius}km e taxa de € ${fee} foram salvos.`,
     });
   };
 
@@ -67,26 +68,34 @@ const DeliveryAreas: React.FC = () => {
         </div>
         
         {/* Business Address Setup */}
-        <AddressSetupCard
-          address={businessAddress ? {
-            street: businessAddress.street,
-            number: businessAddress.number,
-            neighborhood: businessAddress.neighborhood,
-            city: businessAddress.city,
-            state: businessAddress.state,
-            zipCode: businessAddress.postalCode,
-            complement: businessAddress.complement || ""
-          } : {
-            street: "",
-            number: "",
-            neighborhood: "",
-            city: "",
-            state: "",
-            zipCode: "",
-            complement: ""
-          }}
-          onAddressUpdate={handleSetBusinessAddress}
-        />
+        <div className="space-y-4">
+          <AddressSetupCard
+            address={businessAddress ? {
+              street: businessAddress.street,
+              number: businessAddress.number,
+              neighborhood: businessAddress.neighborhood,
+              city: businessAddress.city,
+              state: businessAddress.state,
+              zipCode: businessAddress.postalCode,
+              complement: businessAddress.complement || ""
+            } : {
+              street: "",
+              number: "",
+              neighborhood: "",
+              city: "",
+              state: "",
+              zipCode: "",
+              complement: ""
+            }}
+            onAddressUpdate={handleSetBusinessAddress}
+          />
+          
+          {businessAddress && (
+            <div className="flex justify-end">
+              <GoogleMapsLink address={businessAddress} />
+            </div>
+          )}
+        </div>
 
         {/* Delivery Radius Map */}
         <DeliveryRadiusMap

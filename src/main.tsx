@@ -24,6 +24,7 @@ import Success from "./pages/client/Success.tsx";
 import OnlineMenu from "./pages/menu/OnlineMenu.tsx";
 import LoginSettings from "./pages/security/LoginSettings.tsx";
 import PromotionalCodes from "./pages/promotions/PromotionalCodes.tsx";
+import SystemBackup from "./pages/backup/SystemBackup.tsx";
 
 // Components
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
@@ -104,6 +105,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PromotionalCodes />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "backup",
+        element: (
+          <ProtectedRoute>
+            <SystemBackup />
           </ProtectedRoute>
         ),
       },

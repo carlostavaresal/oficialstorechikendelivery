@@ -131,7 +131,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ order, isOpen, onClose, onStatu
   const getPaymentMethodLabel = (method: PaymentMethod): string => {
     switch (method) {
       case "cash": return "Dinheiro";
-      case "pix": return "Pix";
       case "credit": return "Cartão de Crédito";
       default: return "Desconhecido";
     }

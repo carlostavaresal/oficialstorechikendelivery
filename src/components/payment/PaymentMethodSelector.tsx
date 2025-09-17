@@ -3,9 +3,9 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Smartphone, Banknote } from "lucide-react";
+import { CreditCard, Banknote } from "lucide-react";
 
-export type PaymentMethod = "pix" | "credit" | "cash";
+export type PaymentMethod = "credit" | "cash";
 
 interface PaymentMethodSelectorProps {
   value: PaymentMethod;
@@ -19,12 +19,6 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   disabled = false
 }) => {
   const paymentMethods = [
-    {
-      id: "pix" as PaymentMethod,
-      label: "PIX",
-      icon: Smartphone,
-      description: "Transferência instantânea"
-    },
     {
       id: "credit" as PaymentMethod,
       label: "Cartão de Crédito",

@@ -46,10 +46,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "Arquivo muito grande",
-          description: "A imagem deve ter menos de 5MB.",
+          description: "A imagem deve ter menos de 50MB.",
           variant: "destructive",
         });
         return;
@@ -147,7 +147,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormLabel>Preço (€)</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 
@@ -222,13 +222,13 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange })
                       id="product-image"
                       ref={imageRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
                       onChange={handleImageChange}
                       className="hidden"
                     />
                   </Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    JPG ou PNG, máximo de 5MB.
+                    JPG, PNG, WEBP, GIF - máximo de 50MB.
                   </p>
                 </div>
               </div>
