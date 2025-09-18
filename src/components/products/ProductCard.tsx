@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { Product } from "./ProductsList";
 import EditProductModal from "./EditProductModal";
 import { useToast } from "@/hooks/use-toast";
+import { useProducts } from "@/hooks/useProducts";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,26 +25,33 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { toast } = useToast();
+  const { deleteProduct } = useProducts();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = () => {
-    // Get current products from localStorage
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      // Filter out the product to delete
-      const updatedProducts = products.filter((p: Product) => p.id !== product.id);
-      // Save back to localStorage
-      localStorage.setItem("products", JSON.stringify(updatedProducts));
-      
-      // Dispatch an event to notify that products have been updated
-      window.dispatchEvent(new Event("productsUpdated"));
-      
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const success = await deleteProduct(product.id);
+      if (success) {
+        toast({
+          title: "Produto excluído",
+          description: `${product.name} foi removido com sucesso.`,
+        });
+        setShowDeleteDialog(false);
+      } else {
+        throw new Error("Falha ao excluir produto");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
       toast({
-        title: "Produto excluído",
-        description: `${product.name} foi removido com sucesso.`,
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o produto. Tente novamente.",
+        variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -92,8 +100,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

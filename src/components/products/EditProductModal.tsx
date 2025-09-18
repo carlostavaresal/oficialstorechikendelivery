@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FileImage, UploadCloud } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Product } from "./ProductsList";
+import { useProducts } from "@/hooks/useProducts";
 
 // Define the form schema with validation
 const editProductSchema = z.object({
@@ -29,7 +30,9 @@ interface EditProductModalProps {
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange, product }) => {
   const { toast } = useToast();
+  const { updateProduct } = useProducts();
   const [imagePreview, setImagePreview] = React.useState<string>(product.image);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const imageRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof editProductSchema>>({
@@ -56,10 +59,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "Arquivo muito grande",
-          description: "A imagem deve ter menos de 5MB.",
+          description: "A imagem deve ter menos de 50MB.",
           variant: "destructive",
         });
         return;
@@ -82,40 +85,37 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
     }
   };
 
-  const onSubmit = (values: z.infer<typeof editProductSchema>) => {
-    // Get current products from localStorage
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      
-      // Find and update the product
-      const updatedProducts = products.map((p: Product) => {
-        if (p.id === product.id) {
-          return {
-            ...p,
-            name: values.name,
-            price: values.price,
-            description: values.description,
-            category: values.category,
-            image: imagePreview,
-          };
-        }
-        return p;
+  const onSubmit = async (values: z.infer<typeof editProductSchema>) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const success = await updateProduct(product.id, {
+        name: values.name,
+        price: values.price,
+        description: values.description,
+        category: values.category,
+        image_url: imagePreview,
       });
-      
-      // Save back to localStorage
-      localStorage.setItem("products", JSON.stringify(updatedProducts));
-      
-      // Dispatch an event to notify that products have been updated
-      window.dispatchEvent(new Event("productsUpdated"));
-      
-      // Close modal
-      onOpenChange(false);
-      
+
+      if (success) {
+        onOpenChange(false);
+        toast({
+          title: "Produto atualizado",
+          description: `${values.name} foi atualizado com sucesso.`,
+        });
+      } else {
+        throw new Error("Falha ao atualizar produto");
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
       toast({
-        title: "Produto atualizado",
-        description: `${values.name} foi atualizado com sucesso.`,
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o produto. Tente novamente.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -224,7 +224,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
                     />
                   </Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    JPG ou PNG, máximo de 5MB.
+                    JPG, PNG, WEBP, GIF - máximo de 50MB.
                   </p>
                 </div>
               </div>
@@ -238,7 +238,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onOpenChange,
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+              </Button>
             </div>
           </form>
         </Form>
