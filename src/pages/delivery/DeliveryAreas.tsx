@@ -2,9 +2,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
-import AddressSetupCard from "@/components/delivery/AddressSetupCard";
-import DeliveryRadiusMap from "@/components/delivery/DeliveryRadiusMap";
-import GoogleMapsLink from "@/components/delivery/GoogleMapsLink";
 
 // Define the BusinessAddress interface to be used throughout the component
 export interface BusinessAddress {
@@ -16,6 +13,12 @@ export interface BusinessAddress {
   postalCode: string;
   complement?: string;
 }
+
+// Lazy load the delivery components to avoid potential import issues
+const AddressSetupCard = React.lazy(() => import("@/components/delivery/AddressSetupCard"));
+const DeliveryRadiusMap = React.lazy(() => import("@/components/delivery/DeliveryRadiusMap"));
+const GoogleMapsLink = React.lazy(() => import("@/components/delivery/GoogleMapsLink"));
+
 
 const DeliveryAreas: React.FC = () => {
   const [businessAddress, setBusinessAddress] = useState<BusinessAddress | null>(null);
@@ -67,41 +70,47 @@ const DeliveryAreas: React.FC = () => {
           </p>
         </div>
         
-        {/* Business Address Setup */}
-        <div className="space-y-4">
-          <AddressSetupCard
-            address={businessAddress ? {
-              street: businessAddress.street,
-              number: businessAddress.number,
-              neighborhood: businessAddress.neighborhood,
-              city: businessAddress.city,
-              state: businessAddress.state,
-              zipCode: businessAddress.postalCode,
-              complement: businessAddress.complement || ""
-            } : {
-              street: "",
-              number: "",
-              neighborhood: "",
-              city: "",
-              state: "",
-              zipCode: "",
-              complement: ""
-            }}
-            onAddressUpdate={handleSetBusinessAddress}
-          />
-          
-          {businessAddress && (
-            <div className="flex justify-end">
-              <GoogleMapsLink address={businessAddress} />
-            </div>
-          )}
-        </div>
+        <React.Suspense fallback={
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }>
+          {/* Business Address Setup */}
+          <div className="space-y-4">
+            <AddressSetupCard
+              address={businessAddress ? {
+                street: businessAddress.street,
+                number: businessAddress.number,
+                neighborhood: businessAddress.neighborhood,
+                city: businessAddress.city,
+                state: businessAddress.state,
+                zipCode: businessAddress.postalCode,
+                complement: businessAddress.complement || ""
+              } : {
+                street: "",
+                number: "",
+                neighborhood: "",
+                city: "",
+                state: "",
+                zipCode: "",
+                complement: ""
+              }}
+              onAddressUpdate={handleSetBusinessAddress}
+            />
+            
+            {businessAddress && (
+              <div className="flex justify-end">
+                <GoogleMapsLink address={businessAddress} />
+              </div>
+            )}
+          </div>
 
-        {/* Delivery Radius Map */}
-        <DeliveryRadiusMap
-          address={businessAddress}
-          onSave={handleSaveDeliverySettings}
-        />
+          {/* Delivery Radius Map */}
+          <DeliveryRadiusMap
+            address={businessAddress}
+            onSave={handleSaveDeliverySettings}
+          />
+        </React.Suspense>
       </div>
     </DashboardLayout>
   );
