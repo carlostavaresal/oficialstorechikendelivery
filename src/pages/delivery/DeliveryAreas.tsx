@@ -14,9 +14,9 @@ export interface BusinessAddress {
   complement?: string;
 }
 
-// Lazy load the delivery components to avoid potential import issues
+// Use simple delivery map instead of complex Leaflet component to avoid dependency issues
 const AddressSetupCard = React.lazy(() => import("@/components/delivery/AddressSetupCard"));
-const DeliveryRadiusMap = React.lazy(() => import("@/components/delivery/DeliveryRadiusMap"));
+const SimpleDeliveryMap = React.lazy(() => import("@/components/delivery/SimpleDeliveryMap"));
 const GoogleMapsLink = React.lazy(() => import("@/components/delivery/GoogleMapsLink"));
 
 
@@ -105,8 +105,8 @@ const DeliveryAreas: React.FC = () => {
             )}
           </div>
 
-          {/* Delivery Radius Map */}
-          <DeliveryRadiusMap
+          {/* Simple Delivery Configuration */}
+          <SimpleDeliveryMap
             address={businessAddress}
             onSave={handleSaveDeliverySettings}
           />
