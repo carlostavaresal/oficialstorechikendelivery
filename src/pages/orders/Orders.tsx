@@ -24,10 +24,9 @@ import { HomeIcon } from "lucide-react";
 import OrderModal from "@/components/orders/OrderModal";
 import { PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import { useToast } from "@/hooks/use-toast";
-import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { useCustomerNotifications } from "@/hooks/useCustomerNotifications";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -72,7 +71,7 @@ const Orders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus } = useOrders();
   const { settings } = useCompanySettings();
-  const { sendDeliveryNotification } = useCustomerNotifications();
+  const { sendDeliveryNotification, handleStatusChangeNotification } = useOrderNotifications();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -103,43 +102,8 @@ const Orders: React.FC = () => {
     
     if (!success) return;
     
-    let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-    let statusMessage = "em preparação";
-    let toastTitle = "Status atualizado";
-    
-    switch (newStatus) {
-      case "cancelled":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_CANCELLED;
-        statusMessage = "cancelado";
-        toastTitle = "Pedido Cancelado";
-        break;
-      case "delivered":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_DELIVERED;
-        statusMessage = "entregue";
-        toastTitle = "Pedido Entregue";
-        break;
-      case "processing":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "saiu para entrega";
-        toastTitle = "Pedido Saiu para Entrega";
-        // Send delivery notification to customer
-        sendDeliveryNotification(order);
-        break;
-      case "pending":
-        soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
-        statusMessage = "aguardando";
-        toastTitle = "Pedido Aguardando";
-        break;
-    }
-    
-    // Play appropriate sound
-    playNotificationSound(soundToPlay, 0.5);
-    
-    // Show toast notification
-    toast({
-      title: toastTitle,
-      description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
-    });
+    // Use the new notification system
+    handleStatusChangeNotification(order, newStatus);
   };
 
   if (loading) {

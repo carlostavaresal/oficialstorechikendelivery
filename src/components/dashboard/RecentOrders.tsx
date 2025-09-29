@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { playNotificationSound, NOTIFICATION_SOUNDS } from "@/lib/soundUtils";
 import { useOrders } from "@/hooks/useOrders";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
 
 const getStatusBadgeVariant = (status: string) => {
@@ -61,7 +62,8 @@ const RecentOrders: React.FC = () => {
   const { toast } = useToast();
   const { orders, loading, updateOrderStatus } = useOrders();
   const { settings } = useCompanySettings();
-  const { sendOrderToWhatsApp } = useWhatsAppIntegration();
+  const { handleStatusChangeNotification } = useOrderNotifications();
+  useWhatsAppIntegration(); // Initialize WhatsApp integration for new orders
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -92,49 +94,8 @@ const RecentOrders: React.FC = () => {
     
     if (!success) return;
     
-    let soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-    let statusMessage = "em preparação";
-    let toastTitle = "Status atualizado";
-    
-    switch (newStatus) {
-      case "cancelled":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_CANCELLED;
-        statusMessage = "cancelado";
-        toastTitle = "Pedido Cancelado";
-        break;
-      case "delivered":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_DELIVERED;
-        statusMessage = "entregue";
-        toastTitle = "Pedido Entregue";
-        break;
-      case "processing":
-        soundToPlay = NOTIFICATION_SOUNDS.ORDER_PROCESSING;
-        statusMessage = "em preparação";
-        toastTitle = "Pedido em Preparação";
-        break;
-      case "pending":
-        soundToPlay = NOTIFICATION_SOUNDS.NEW_ORDER;
-        statusMessage = "aguardando";
-        toastTitle = "Pedido Aguardando";
-        break;
-    }
-    
-    // Play appropriate sound
-    playNotificationSound(soundToPlay, 0.5);
-    
-    // Show toast notification
-    toast({
-      title: toastTitle,
-      description: `O pedido ${orderId} foi alterado para ${statusMessage}`,
-    });
-    
-    // Send WhatsApp notification to customer if phone is available
-    if (order.customer_phone && settings?.whatsapp_number) {
-      const message = encodeURIComponent(
-        `Olá ${order.customer_name}, seu pedido ${orderId} foi alterado para ${statusMessage}. Para mais informações entre em contato conosco.`
-      );
-      window.open(`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}?text=${message}`, "_blank");
-    }
+    // Use the new notification system
+    handleStatusChangeNotification(order, newStatus);
   };
 
   if (loading) {
