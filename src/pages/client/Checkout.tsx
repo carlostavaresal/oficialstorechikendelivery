@@ -138,8 +138,8 @@ const Checkout = () => {
         description: "Seu pedido foi enviado com sucesso.",
       });
       
-      // Redirect to success page
-      navigate("/client/success");
+      // Redirect to digital menu
+      navigate("/client");
       
     } catch (error) {
       console.error('Error creating order:', error);
